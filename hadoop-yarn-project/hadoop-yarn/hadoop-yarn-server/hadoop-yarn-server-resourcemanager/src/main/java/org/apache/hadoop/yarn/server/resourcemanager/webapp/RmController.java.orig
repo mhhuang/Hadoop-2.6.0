@@ -86,14 +86,6 @@ public class RmController extends Controller {
     render(DefaultSchedulerPage.class);
   }
 
-  public void planner() {
-    render(PlannerPage.class);
-  }
-
-  public void data() {
-    render(DataPage.class);
-  }
-
   public void queue() {
     setTitle(join("Queue ", get(QUEUE_NAME, "unknown")));
   }

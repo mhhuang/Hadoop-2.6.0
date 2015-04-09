@@ -60,6 +60,7 @@ public class AppInfo {
   protected String user;
   protected String name;
   protected String queue;
+  protected String reservationId;
   protected YarnApplicationState state;
   protected FinalApplicationStatus finalStatus;
   protected float progress;
@@ -118,6 +119,7 @@ public class AppInfo {
       this.user = app.getUser().toString();
       this.name = app.getName().toString();
       this.queue = app.getQueue().toString();
+      this.reservationId = (app.getReservationId() != null) ? app.getReservationId().toString() : "N/A";
       this.progress = app.getProgress() * 100;
       this.diagnostics = app.getDiagnostics().toString();
       if (diagnostics == null || diagnostics.isEmpty()) {
@@ -194,6 +196,10 @@ public class AppInfo {
 
   public String getQueue() {
     return this.queue;
+  }
+  
+  public String getReservationId() {
+    return this.reservationId;
   }
 
   public String getName() {

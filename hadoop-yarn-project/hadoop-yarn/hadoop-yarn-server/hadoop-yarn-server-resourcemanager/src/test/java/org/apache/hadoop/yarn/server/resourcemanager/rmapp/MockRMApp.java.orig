@@ -262,6 +262,6 @@ public class MockRMApp implements RMApp {
 
   @Override
   public ReservationId getReservationId() {
-    return ReservationId.newInstance(getStartTime(), 1L);
+    throw new UnsupportedOperationException("Not supported yet.");
   }
 }

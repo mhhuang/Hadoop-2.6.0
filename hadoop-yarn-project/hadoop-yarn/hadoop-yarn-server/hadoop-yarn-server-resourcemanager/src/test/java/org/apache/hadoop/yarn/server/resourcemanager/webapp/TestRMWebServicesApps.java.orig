@@ -1322,15 +1322,7 @@ public class TestRMWebServicesApps extends JerseyTest {
       Exception {
 
     // 28 because trackingUrl not assigned yet
-    /* 27 elements:
-      allocatedMB, allocatedVCores, amContainerLogs, amHostHttpAddress, applicationTags,
-      applicationType, clusterId, diagnostics, elapsedTime, finalStatus,
-      finishedTime, id, memorySeconds, name, numAMContainerPreempted,
-      numNonAMContainerPreempted, preemptedResourceMB, preemptedResourceVCores, progress, queue,
-      reservationId, runningContainers, startedTime, state, trackingUI,
-      user, vcoreSeconds
-     */
-    assertEquals("incorrect number of elements", 27, info.length());
+    assertEquals("incorrect number of elements", 26, info.length());
 
     verifyAppInfoGeneric(app, info.getString("id"), info.getString("user"),
         info.getString("name"), info.getString("applicationType"),

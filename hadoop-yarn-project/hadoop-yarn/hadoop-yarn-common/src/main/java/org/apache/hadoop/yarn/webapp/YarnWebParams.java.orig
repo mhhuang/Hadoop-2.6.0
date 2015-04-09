@@ -31,10 +31,5 @@ public interface YarnWebParams {
   String APP_OWNER = "app.owner";
   String APP_STATE = "app.state";
   String QUEUE_NAME = "queue.name";
-  String PLAN_JSON_USER = "plan.user";
-  String PLAN_JSON_RES_NAME = "plan.resName";
-  String PLAN_JSON_RESOURCE = "plan.resource";
-  String PLAN_JSON_FROM = "plan.from";
-  String PLAN_JSON_TO = "plan.to";
   String NODE_STATE = "node.state";
 }
