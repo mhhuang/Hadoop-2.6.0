@@ -79,6 +79,20 @@ public class ResourcePBImpl extends Resource {
     builder.setVirtualCores((vCores));
   }
 
+	/** Amber code starts here */
+  @Override
+  public boolean getIsFpga() {
+    ResourceProtoOrBuilder p = viaProto ? proto : builder;
+    return (p.getIsFpga());
+  }
+
+  @Override
+  public void setIsFpga(boolean isFpga) {
+    maybeInitBuilder();
+    builder.setIsFpga((isFpga));
+  }
+	/** Amber code ends here */
+
   @Override
   public int compareTo(Resource other) {
     int diff = this.getMemory() - other.getMemory();

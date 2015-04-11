@@ -57,8 +57,31 @@ public abstract class Resource implements Comparable<Resource> {
     Resource resource = Records.newRecord(Resource.class);
     resource.setMemory(memory);
     resource.setVirtualCores(vCores);
+		/** Amber code starts here */
+		resource.setIsFpga(false);
+		/** Amber code ends here */
     return resource;
   }
+
+	/** Amber code starts here */
+  @Public
+  @Stable
+  public static Resource newInstance(int memory, int vCores, 
+			boolean isFpga) {
+    Resource resource = Records.newRecord(Resource.class);
+    resource.setMemory(memory);
+    resource.setVirtualCores(vCores);
+		resource.setIsFpga(isFpga);
+    return resource;
+  }
+  @Public
+  @Stable
+  public abstract boolean getIsFpga();
+  
+  @Public
+  @Stable
+  public abstract void setIsFpga(boolean isFpga);
+	/** Amber code ends here */
 
   /**
    * Get <em>memory</em> of the resource.
@@ -124,7 +147,10 @@ public abstract class Resource implements Comparable<Resource> {
       return false;
     Resource other = (Resource) obj;
     if (getMemory() != other.getMemory() || 
-        getVirtualCores() != other.getVirtualCores()) {
+    //    getVirtualCores() != other.getVirtualCores()) {
+		/** Amber code */
+        getVirtualCores() != other.getVirtualCores() ||
+				getIsFpga() != other.getIsFpga()) {
       return false;
     }
     return true;
@@ -132,6 +158,9 @@ public abstract class Resource implements Comparable<Resource> {
 
   @Override
   public String toString() {
-    return "<memory:" + getMemory() + ", vCores:" + getVirtualCores() + ">";
+  //  return "<memory:" + getMemory() + ", vCores:" + getVirtualCores() + ">";
+	/** Amber code */
+    return "<memory:" + getMemory() + ", vCores:" + getVirtualCores()
+			+ ", isFpga: " + getIsFpga() + ">";
   }
 }

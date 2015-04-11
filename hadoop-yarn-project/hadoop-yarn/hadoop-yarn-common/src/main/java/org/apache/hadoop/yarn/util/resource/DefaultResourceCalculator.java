@@ -69,7 +69,12 @@ public class DefaultResourceCalculator extends ResourceCalculator {
             Math.max(r.getMemory(), minimumResource.getMemory()),
             stepFactor.getMemory()),
             maximumResource.getMemory());
-    return Resources.createResource(normalizedMemory);
+    //return Resources.createResource(normalizedMemory);
+		/** Amber code starts here */
+		Resource normalizedResource = Resources.createResource(normalizedMemory);
+		normalizedResource.setIsFpga(r.getIsFpga()); 
+		return normalizedResource; 
+		/** Amber code ends here */
   }
 
   @Override

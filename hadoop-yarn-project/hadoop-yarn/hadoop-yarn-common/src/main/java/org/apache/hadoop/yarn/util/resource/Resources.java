@@ -58,6 +58,18 @@ public class Resources {
       }
       return diff;
     }
+
+		/** Amber code starts here */
+		@Override
+		public void setIsFpga(boolean isFpga) {
+      throw new RuntimeException("NONE cannot be modified!");
+		}
+
+		@Override
+		public boolean getIsFpga() {
+			return false;
+		}
+		/** Amber code ends here */
     
   };
   
@@ -92,6 +104,17 @@ public class Resources {
       return diff;
     }
     
+		/** Amber code starts here */
+		@Override
+		public void setIsFpga(boolean isFpga) {
+      throw new RuntimeException("NONE cannot be modified!");
+		}
+    
+		@Override
+		public boolean getIsFpga() {
+			return false;
+		}
+		/** Amber code ends here */
   };
 
   public static Resource createResource(int memory) {
