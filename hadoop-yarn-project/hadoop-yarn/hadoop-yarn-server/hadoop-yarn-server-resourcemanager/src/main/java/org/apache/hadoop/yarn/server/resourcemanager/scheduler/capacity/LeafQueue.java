@@ -1951,6 +1951,7 @@ public class LeafQueue extends AbstractCSQueue {
   
   public void setCapacity(float capacity) {
     this.capacity = capacity;
+		this.queueInfo.setCapacity(capacity);
   }
 
   public void setAbsoluteCapacity(float absoluteCapacity) {
