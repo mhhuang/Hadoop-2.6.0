@@ -135,6 +135,38 @@ public class ReservationRequestPBImpl extends ReservationRequest {
     builder.setDuration(duration);
   }
 
+	/** Amber code starts here */
+  @Override
+  public float getSpeedup() {
+    ReservationRequestProtoOrBuilder p = viaProto ? proto : builder;
+    if (!p.hasSpeedup()) {
+      return 0;
+    }
+    return (p.getSpeedup());
+  }
+
+  @Override
+  public void setSpeedup(float speedup) {
+    maybeInitBuilder();
+    builder.setSpeedup(speedup);
+  }
+
+  @Override
+  public float getAccPercent() {
+    ReservationRequestProtoOrBuilder p = viaProto ? proto : builder;
+    if (!p.hasAccPercent()) {
+      return 0;
+    }
+    return (p.getAccPercent());
+  }
+
+  @Override
+  public void setAccPercent(float accPercent) {
+    maybeInitBuilder();
+    builder.setAccPercent(accPercent);
+  }
+	/** Amber code ends here */
+
   private ResourcePBImpl convertFromProtoFormat(ResourceProto p) {
     return new ResourcePBImpl(p);
   }
@@ -147,6 +179,11 @@ public class ReservationRequestPBImpl extends ReservationRequest {
   public String toString() {
     return "{Capability: " + getCapability() + ", # Containers: "
         + getNumContainers() + ", Concurrency: " + getConcurrency()
-        + ", Lease Duration: " + getDuration() + "}";
+				// + ", Lease Duration: " + getDuration() + "}";
+				/** Amber code ends here */
+				+ ", Lease Duration: " + getDuration()
+				+ ", Speedup: " + getSpeedup()
+				+ ", AccPercent: " + getAccPercent() + "}";
+				/** Amber code ends here */
   }
 }

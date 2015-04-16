@@ -72,7 +72,7 @@ public class DefaultResourceCalculator extends ResourceCalculator {
     //return Resources.createResource(normalizedMemory);
 		/** Amber code starts here */
 		Resource normalizedResource = Resources.createResource(normalizedMemory);
-		normalizedResource.setIsFpga(r.getIsFpga()); 
+		normalizedResource.setAccs(r.getAccs()); 
 		return normalizedResource; 
 		/** Amber code ends here */
   }

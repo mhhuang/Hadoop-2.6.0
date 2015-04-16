@@ -156,7 +156,9 @@ public class ReservationInputValidator {
     }
     // check that the largest gang does not exceed the inventory available
     // capacity (skip for ANY)
-    if (Resources.greaterThan(plan.getResourceCalculator(),
+    //if (Resources.greaterThan(plan.getResourceCalculator(),
+		/** Amber code starts here. A line */
+    if (Resources.rsrvGreaterThan(plan.getResourceCalculator(),
         plan.getTotalCapacity(), maxGangSize, plan.getTotalCapacity())
         && type != ReservationRequestInterpreter.R_ANY) {
       message =

@@ -61,13 +61,13 @@ public class Resources {
 
 		/** Amber code starts here */
 		@Override
-		public void setIsFpga(boolean isFpga) {
+		public void setAccs(int accs) {
       throw new RuntimeException("NONE cannot be modified!");
 		}
 
 		@Override
-		public boolean getIsFpga() {
-			return false;
+		public int getAccs() {
+			return 0;
 		}
 		/** Amber code ends here */
     
@@ -106,13 +106,13 @@ public class Resources {
     
 		/** Amber code starts here */
 		@Override
-		public void setIsFpga(boolean isFpga) {
+		public void setAccs(int accs) {
       throw new RuntimeException("NONE cannot be modified!");
 		}
     
 		@Override
-		public boolean getIsFpga() {
-			return false;
+		public int getAccs() {
+			return 0;
 		}
 		/** Amber code ends here */
   };
@@ -128,6 +128,16 @@ public class Resources {
     return resource;
   }
 
+	/** Amber code starts here */
+  public static Resource createResource(int memory, int cores, int accs) {
+    Resource resource = Records.newRecord(Resource.class);
+    resource.setMemory(memory);
+    resource.setVirtualCores(cores);
+    resource.setAccs(accs);
+    return resource;
+  }
+	/** Amber code ends here */
+
   public static Resource none() {
     return NONE;
   }
@@ -137,12 +147,19 @@ public class Resources {
   }
 
   public static Resource clone(Resource res) {
-    return createResource(res.getMemory(), res.getVirtualCores());
+    //return createResource(res.getMemory(), res.getVirtualCores());
+		/** Amber code starts here */
+    return createResource(res.getMemory(), res.getVirtualCores(), 
+				res.getAccs());
+		/** Amber code starts here */
   }
 
   public static Resource addTo(Resource lhs, Resource rhs) {
     lhs.setMemory(lhs.getMemory() + rhs.getMemory());
     lhs.setVirtualCores(lhs.getVirtualCores() + rhs.getVirtualCores());
+		/** Amber code starts here */
+    lhs.setAccs(lhs.getAccs() + rhs.getAccs());
+		/** Amber code starts here */
     return lhs;
   }
 
@@ -153,6 +170,9 @@ public class Resources {
   public static Resource subtractFrom(Resource lhs, Resource rhs) {
     lhs.setMemory(lhs.getMemory() - rhs.getMemory());
     lhs.setVirtualCores(lhs.getVirtualCores() - rhs.getVirtualCores());
+		/** Amber code starts here */
+    lhs.setAccs(lhs.getAccs() - rhs.getAccs());
+		/** Amber code starts here */
     return lhs;
   }
 
@@ -167,6 +187,9 @@ public class Resources {
   public static Resource multiplyTo(Resource lhs, double by) {
     lhs.setMemory((int)(lhs.getMemory() * by));
     lhs.setVirtualCores((int)(lhs.getVirtualCores() * by));
+		/** Amber code starts here */
+    lhs.setAccs((int)(lhs.getAccs() * by));
+		/** Amber code starts here */
     return lhs;
   }
 
@@ -223,6 +246,17 @@ public class Resources {
     return resourceCalculator.divide(clusterResource, lhs, rhs);
   }
   
+	/** Amber code starts here */
+  public static float rsrvDivide(
+      ResourceCalculator resourceCalculator,
+      Resource clusterResource, Resource lhs, Resource rhs) {
+    float memDivide = resourceCalculator.divide(clusterResource, lhs, rhs);
+		return Math.min(memDivide, 
+				rhs.getAccs() == 0 ? memDivide :
+				lhs.getAccs() / rhs.getAccs());
+  }
+  
+	/** Amber code ends here */
   public static Resource divideAndCeil(
       ResourceCalculator resourceCalculator, Resource lhs, int rhs) {
     return resourceCalculator.divideAndCeil(lhs, rhs);
@@ -252,6 +286,15 @@ public class Resources {
       Resource lhs, Resource rhs) {
     return resourceCalculator.compare(clusterResource, lhs, rhs) > 0;
   }
+
+	/** Amber code starts here */
+	public static boolean rsrvGreaterThan(
+			ResourceCalculator resourceCalculator,
+			Resource clusterResource,
+			Resource lhs, Resource rhs) {
+		return (lhs.getMemory() > rhs.getMemory()) || (lhs.getAccs() > rhs.getAccs());
+	}
+	/** Amber code ends here */
 
   public static boolean greaterThanOrEqual(
       ResourceCalculator resourceCalculator, 

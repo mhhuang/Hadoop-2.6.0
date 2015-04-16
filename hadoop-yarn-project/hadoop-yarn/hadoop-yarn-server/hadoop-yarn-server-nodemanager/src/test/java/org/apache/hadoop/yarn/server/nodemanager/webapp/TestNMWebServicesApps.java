@@ -121,6 +121,10 @@ public class TestNMWebServicesApps extends JerseyTest {
           return new Long("4000");
         }
 
+        @Override
+        public long getAccsAllocatedForContainers() {
+          return new Long("0");
+        }
 
         @Override
         public boolean isVmemCheckEnabled() {

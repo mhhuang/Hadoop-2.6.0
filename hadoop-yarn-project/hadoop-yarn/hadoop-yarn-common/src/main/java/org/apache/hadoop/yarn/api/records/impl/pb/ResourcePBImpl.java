@@ -81,15 +81,15 @@ public class ResourcePBImpl extends Resource {
 
 	/** Amber code starts here */
   @Override
-  public boolean getIsFpga() {
+  public int getAccs() {
     ResourceProtoOrBuilder p = viaProto ? proto : builder;
-    return (p.getIsFpga());
+    return (p.getAccs());
   }
 
   @Override
-  public void setIsFpga(boolean isFpga) {
+  public void setAccs(int accs) {
     maybeInitBuilder();
-    builder.setIsFpga((isFpga));
+    builder.setAccs((accs));
   }
 	/** Amber code ends here */
 
@@ -98,6 +98,11 @@ public class ResourcePBImpl extends Resource {
     int diff = this.getMemory() - other.getMemory();
     if (diff == 0) {
       diff = this.getVirtualCores() - other.getVirtualCores();
+			/** Amber code starts here */
+			if (diff == 0) {
+        diff = this.getAccs() - other.getAccs();
+			}
+			/** Amber code ends here */
     }
     return diff;
   }

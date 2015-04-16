@@ -72,6 +72,8 @@ public class ContainersMonitorImpl extends AbstractService implements
 
   private long maxVCoresAllottedForContainers;
 
+  private long maxAccsAllottedForContainers;
+
   private static final long UNKNOWN_MEMORY_LIMIT = -1L;
 
   public ContainersMonitorImpl(ContainerExecutor exec,
@@ -114,12 +116,16 @@ public class ContainersMonitorImpl extends AbstractService implements
         YarnConfiguration.NM_VCORES,
         YarnConfiguration.DEFAULT_NM_VCORES);
 
+    long configuredAccsForContainers = conf.getLong(
+        YarnConfiguration.NM_ACCS,
+        YarnConfiguration.DEFAULT_NM_ACCS);
 
     // Setting these irrespective of whether checks are enabled. Required in
     // the UI.
     // ///////// Physical memory configuration //////
     this.maxPmemAllottedForContainers = configuredPMemForContainers;
     this.maxVCoresAllottedForContainers = configuredVCoresForContainers;
+    this.maxAccsAllottedForContainers = configuredAccsForContainers;
 
     // ///////// Virtual memory configuration //////
     float vmemRatio = conf.getFloat(YarnConfiguration.NM_VMEM_PMEM_RATIO,
@@ -529,6 +535,11 @@ public class ContainersMonitorImpl extends AbstractService implements
   @Override
   public long getVCoresAllocatedForContainers() {
     return this.maxVCoresAllottedForContainers;
+  }
+
+  @Override
+  public long getAccsAllocatedForContainers() {
+    return this.maxAccsAllottedForContainers;
   }
 
   /**

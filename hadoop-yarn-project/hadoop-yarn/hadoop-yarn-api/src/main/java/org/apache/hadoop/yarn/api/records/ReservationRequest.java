@@ -64,8 +64,32 @@ public abstract class ReservationRequest implements
     request.setNumContainers(numContainers);
     request.setConcurrency(concurrency);
     request.setDuration(duration);
+		/** Amber code starts here */
+		request.setSpeedup(1);
+		request.setAccPercent(0);
+		/** Amber code ends here */
     return request;
   }
+
+	/** Amber code starts here */
+  @Public
+  @Unstable
+  public static ReservationRequest newInstance(Resource capability,
+      int numContainers, int concurrency, long duration,
+			float speedup, float accPercent) {
+    ReservationRequest request = Records.newRecord(ReservationRequest.class);
+    request.setCapability(capability);
+    request.setNumContainers(numContainers);
+    request.setConcurrency(concurrency);
+    request.setDuration(duration);
+		/** Amber code starts here */
+		request.setSpeedup(speedup);
+		request.setAccPercent(accPercent);
+		/** Amber code ends here */
+    return request;
+  }
+
+	/** Amber code ends here */
 
   @Public
   @Unstable
@@ -167,6 +191,24 @@ public abstract class ReservationRequest implements
   @Public
   @Unstable
   public abstract void setDuration(long duration);
+
+	/** Amber code starts here */
+  @Public
+  @Unstable
+  public abstract float getSpeedup();
+
+  @Public
+  @Unstable
+  public abstract void setSpeedup(float speedup);
+
+  @Public
+  @Unstable
+  public abstract float getAccPercent();
+
+  @Public
+  @Unstable
+  public abstract void setAccPercent(float accPercent);
+	/** Amber code ends here */
 
   @Override
   public int hashCode() {

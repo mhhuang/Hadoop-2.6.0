@@ -255,6 +255,15 @@ public class GreedyReservationAgent implements ReservationAgent {
     long dur = rr.getDuration();
     long step = plan.getStep();
 
+		/** Amber code starts here */
+		LOG.info("Amber: original duration: " + dur);
+		float speedup = rr.getSpeedup();
+		float accPercent = rr.getAccPercent();
+		dur = (long)(dur * accPercent / speedup + dur * (1 - accPercent));
+		LOG.info("Amber: refined duration: " + dur);
+		LOG.info("Amber: gang: " + gang);
+		/** Amber code ends here */
+
     // ceil the duration to the next multiple of the plan step
     if (dur % step != 0) {
       dur += (step - (dur % step));
@@ -299,9 +308,14 @@ public class GreedyReservationAgent implements ReservationAgent {
             tempAssigned.getCapacityAtTime(t));
 
         // compute maximum number of gangs we could fit
+        //curMaxGang =
+        //    (int) Math.floor(Resources.divide(plan.getResourceCalculator(),
+        //        totalCapacity, netAvailableRes, gang));
+				/** Amber code starts here */
         curMaxGang =
-            (int) Math.floor(Resources.divide(plan.getResourceCalculator(),
+            (int) Math.floor(Resources.rsrvDivide(plan.getResourceCalculator(),
                 totalCapacity, netAvailableRes, gang));
+				/** Amber code ends here */
 
         // pick the minimum between available resources in this instant, and how
         // many gangs we have to place
