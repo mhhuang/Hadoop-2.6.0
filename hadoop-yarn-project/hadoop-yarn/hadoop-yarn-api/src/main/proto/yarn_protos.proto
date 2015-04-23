@@ -365,8 +365,8 @@ message ReservationRequestProto {
   optional int32 num_containers = 2 [default = 1];
   optional int32 concurrency = 3 [default = 1];
   optional int64 duration = 4 [default = -1];
-	optional float speedup = 100 [default = 1];
-	optional float acc_percent = 101 [default = 0];
+		optional float speedup = 100 [default = 1];
+		optional float acc_percent = 101 [default = 0];
 }
 
 message ReservationRequestsProto {
@@ -379,6 +379,8 @@ message ReservationDefinitionProto {
   optional int64 arrival = 2;
   optional int64 deadline = 3;
   optional string reservation_name = 4;
+		optional int32 numCpus = 100 [default = 0]; 
+		optional int32 numAccs = 101 [default = 0];
 }
 
 enum ReservationRequestInterpreterProto {

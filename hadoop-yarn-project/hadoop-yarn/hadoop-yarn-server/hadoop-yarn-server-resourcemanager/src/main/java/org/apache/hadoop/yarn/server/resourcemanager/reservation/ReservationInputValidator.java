@@ -140,20 +140,22 @@ public class ReservationInputValidator {
               maxGangSize,
               Resources.multiply(rr.getCapability(), rr.getConcurrency()));
     }
+				/** Amber code starts here. The following is commented out.*/
     // verify the allocation is possible (skip for ANY)
-    if (contract.getDeadline() - contract.getArrival() < minDuration
-        && type != ReservationRequestInterpreter.R_ANY) {
-      message =
-          "The time difference ("
-              + (contract.getDeadline() - contract.getArrival())
-              + ") between arrival (" + contract.getArrival() + ") "
-              + "and deadline (" + contract.getDeadline() + ") must "
-              + " be greater or equal to the minimum resource duration ("
-              + minDuration + ")";
-      RMAuditLogger.logFailure("UNKNOWN", auditConstant,
-          "validate reservation input definition", "ClientRMService", message);
-      throw RPCUtil.getRemoteException(message);
-    }
+    //if (contract.getDeadline() - contract.getArrival() < minDuration
+    //    && type != ReservationRequestInterpreter.R_ANY) {
+    //  message =
+    //      "The time difference ("
+    //          + (contract.getDeadline() - contract.getArrival())
+    //          + ") between arrival (" + contract.getArrival() + ") "
+    //          + "and deadline (" + contract.getDeadline() + ") must "
+    //          + " be greater or equal to the minimum resource duration ("
+    //          + minDuration + ")";
+    //  RMAuditLogger.logFailure("UNKNOWN", auditConstant,
+    //      "validate reservation input definition", "ClientRMService", message);
+    //  throw RPCUtil.getRemoteException(message);
+    //}
+				/** Amber code ends here. The above is commented out.*/
     // check that the largest gang does not exceed the inventory available
     // capacity (skip for ANY)
     //if (Resources.greaterThan(plan.getResourceCalculator(),

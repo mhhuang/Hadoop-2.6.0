@@ -1101,6 +1101,11 @@ public class ClientRMService extends AbstractService implements
             reservationId.toString());
         // return the reservation id
         response.setReservationId(reservationId);
+
+								/** Amber code starts here */
+								response.setNumCpus(request.getReservationDefinition().getNumCpus());
+								response.setNumAccs(request.getReservationDefinition().getNumAccs());
+								/** Amber code ends here */
       }
     } catch (PlanningException e) {
       RMAuditLogger.logFailure(user, AuditConstants.SUBMIT_RESERVATION_REQUEST,

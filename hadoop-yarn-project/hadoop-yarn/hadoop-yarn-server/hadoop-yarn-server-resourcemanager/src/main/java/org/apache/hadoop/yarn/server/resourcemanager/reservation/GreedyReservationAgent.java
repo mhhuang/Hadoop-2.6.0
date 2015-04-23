@@ -55,20 +55,305 @@ public class GreedyReservationAgent implements ReservationAgent {
   @Override
   public boolean createReservation(ReservationId reservationId, String user,
       Plan plan, ReservationDefinition contract) throws PlanningException {
-    return computeAllocation(reservationId, user, plan, contract, null);
+    //return computeAllocation(reservationId, user, plan, contract, null);
+		/** Amber code starts here */
+    LOG.info("GreeyReservationAgenet.createReservation()");
+    return computeAllocationAmber(reservationId, user, plan, contract, null);
+		/** Amber code ends here */
   }
 
   @Override
   public boolean updateReservation(ReservationId reservationId, String user,
       Plan plan, ReservationDefinition contract) throws PlanningException {
-    return computeAllocation(reservationId, user, plan, contract,
-        plan.getReservationById(reservationId));
+    LOG.info("GreeyReservationAgenet.updateReservation()");
+		return false;
+    //return computeAllocation(reservationId, user, plan, contract,
+    //    plan.getReservationById(reservationId));
   }
 
   @Override
   public boolean deleteReservation(ReservationId reservationId, String user,
       Plan plan) throws PlanningException {
+    LOG.info("GreeyReservationAgenet.deleteReservation()");
     return plan.deleteReservation(reservationId);
+  }
+
+		/** Amber allocation should return numAccs and numCpus in contract*/
+  private boolean computeAllocationAmber(ReservationId reservationId, String user,
+      Plan plan, ReservationDefinition contract,
+      ReservationAllocation oldReservation) throws PlanningException,
+      ContractValidationException {
+    LOG.info("placing the following ReservationRequest: " + contract);
+
+				// Amber syntax check:
+				if (oldReservation != null) {
+					throw new PlanningException("The AmberGreedyAgent"
+							+ " does not support reservation update or delete");
+				}
+
+    Resource totalCapacity = plan.getTotalCapacity();
+
+    // Here we can addd logic to adjust the ResourceDefinition to account for
+    // system "imperfections" (e.g., scheduling delays for large containers).
+
+    // Align with plan step conservatively (i.e., ceil arrival, and floor
+    // deadline)
+    long earliestStart = contract.getArrival();
+    long step = plan.getStep();
+    if (earliestStart % step != 0) {
+      earliestStart = earliestStart + (step - (earliestStart % step));
+    }
+    long deadline =
+        contract.getDeadline() - contract.getDeadline() % plan.getStep();
+
+    // setup temporary variables to handle time-relations between stages and
+    // intermediate answers
+    long curDeadline = deadline;
+    long oldDeadline = -1;
+
+				// Amber: it should be single element only
+    Map<ReservationInterval, ReservationRequest> allocations =
+        new HashMap<ReservationInterval, ReservationRequest>();
+    RLESparseResourceAllocation tempAssigned =
+        new RLESparseResourceAllocation(plan.getResourceCalculator(),
+            plan.getMinimumAllocation());
+		
+    List<ReservationRequest> stages = contract.getReservationRequests()
+        .getReservationResources();
+    ReservationRequestInterpreter type = contract.getReservationRequests()
+        .getInterpreter();
+
+				// Amber syntax check:
+				if (stages.size() > 1) {
+					throw new PlanningException("The AmberGreedyAgent"
+							+ " does not support multi-stage reservation");
+				}
+				if (type != ReservationRequestInterpreter.R_ALL) {
+					throw new PlanningException("The AmberGreedyAgent"
+							+ " does not support R_ALL reservation interpreter");
+				}
+
+				ReservationRequest currentReservationStage = stages.get(0);
+
+				// validate the RR respect basic constraints
+				validateInput(plan, currentReservationStage, totalCapacity);
+
+				int maxHeight = currentReservationStage.getNumContainers();
+				long duration = currentReservationStage.getDuration();
+
+				// try not to use Acc unless cannot place
+				for(int usedAccs = 0; usedAccs <= maxHeight; ++usedAccs) {
+
+						if (usedAccs > 0 && currentReservationStage.getAccPercent() < 0.0001) 
+								continue;
+						LOG.info("try placing with " + usedAccs + " accelerator(s)");
+
+						// try from the tall-and-thin one first
+						for(int usedCpus = maxHeight; usedCpus > 0; --usedCpus)  {
+
+								// assume one container one acc
+								if (usedAccs > usedCpus) continue;
+
+								ReservationRequest tryStage =
+										ReservationRequest.newInstance(
+														currentReservationStage.getCapability(),
+														usedCpus,
+														usedCpus, // concurrency is set to the same as usedCpus
+														(long)(duration / (float)usedCpus * maxHeight + 0.5f),
+														currentReservationStage.getSpeedup(),
+														currentReservationStage.getAccPercent());
+
+								// run allocation for a single stage
+								Map<ReservationInterval, ReservationRequest> curAlloc =
+										placeSingleStageAmber(plan, tempAssigned, tryStage,
+														earliestStart, curDeadline, oldReservation, totalCapacity,
+														usedAccs);
+
+								if (curAlloc != null) {
+										// if we did find an allocation add it to the set of allocations
+										allocations.putAll(curAlloc);
+										LOG.info("Amber found an allocation: " + usedCpus + " cpus, " +
+														usedAccs + " accs.");
+										contract.setNumAccs(usedAccs);
+										contract.setNumCpus(usedCpus);
+										break;
+								}
+						}
+						// if we did find an allocation add it to the set of allocations
+						if (!allocations.isEmpty()) {
+								break;
+						}
+				}
+
+				// / If we got here is because we failed to find an allocation for the
+				// ReservationDefinition give-up and report failure to the user
+				if (allocations.isEmpty()) {
+						throw new PlanningException("The GreedyAgent"
+										+ " couldn't find a valid allocation for your request");
+				}
+
+				// create reservation with above allocations if not null/empty
+
+				ReservationRequest ZERO_RES =
+						ReservationRequest.newInstance(Resource.newInstance(0, 0), 0);
+
+				long firstStartTime = findEarliestTime(allocations.keySet());
+
+				// add zero-padding from arrival up to the first non-null allocation
+				// to guarantee that the reservation exists starting at arrival
+				if (firstStartTime > earliestStart) {
+						allocations.put(new ReservationInterval(earliestStart,
+												firstStartTime), ZERO_RES);
+						firstStartTime = earliestStart;
+						// consider to add trailing zeros at the end for simmetry
+				}
+
+				// Actually add/update the reservation in the plan.
+				// This is subject to validation as other agents might be placing
+				// in parallel and there might be sharing policies the agent is not
+				// aware off.
+				// TODO, should send over # of accs as well
+				ReservationAllocation capReservation =
+						new InMemoryReservationAllocation(reservationId, contract, user,
+										plan.getQueueName(), firstStartTime,
+										findLatestTime(allocations.keySet()), allocations,
+										plan.getResourceCalculator(), plan.getMinimumAllocation());
+				return plan.addReservation(capReservation);
+		}
+
+		private Map<ReservationInterval, ReservationRequest> placeSingleStageAmber(
+						Plan plan, RLESparseResourceAllocation tempAssigned,
+						ReservationRequest rr, long earliestStart, long curDeadline,
+						ReservationAllocation oldResAllocation, final Resource totalCapacity,
+						int usedAccs) {
+
+				Map<ReservationInterval, ReservationRequest> allocationRequests =
+						new HashMap<ReservationInterval, ReservationRequest>();
+
+				// compute the gang as a resource and get the duration
+				Resource gang = Resources.multiply(rr.getCapability(), rr.getConcurrency());
+				long dur = rr.getDuration();
+				long step = plan.getStep();
+
+				/** Amber code starts here */
+				LOG.info("Amber: original duration: " + dur);
+				float speedup = rr.getSpeedup();
+				float accPercent = rr.getAccPercent();
+				// assumption. Each cpu uses one acc at a time; cpu idle while acc is working
+				float capacitySpeedup = (usedAccs * (speedup - 1) + rr.getNumContainers()) /
+						(float)rr.getNumContainers();
+				dur = (long)(dur * accPercent / capacitySpeedup + dur * (1 - accPercent));
+				LOG.info("Amber: refined duration: " + dur);
+				LOG.info("Amber: gang: " + gang);
+				/** Amber code ends here */
+
+				// ceil the duration to the next multiple of the plan step
+				if (dur % step != 0) {
+						dur += (step - (dur % step));
+				}
+
+				// we know for sure that we only have 1 gang to place
+				int gangsToPlace = 1;
+
+				int maxGang = 0;
+
+				// loop trying to place until we are done, or we are considering
+				// an invalid range of times
+				while (gangsToPlace > 0 && curDeadline - dur >= earliestStart) {
+
+						// as we run along we remember how many gangs we can fit, and what
+						// was the most constraining moment in time (we will restart just
+						// after that to place the next batch)
+						maxGang = gangsToPlace;
+						long minPoint = curDeadline;
+						int curMaxGang = maxGang;
+
+						// start placing at deadline (excluded due to [,) interval semantics and
+						// move backward
+						for (long t = curDeadline - plan.getStep(); t >= curDeadline - dur
+										&& maxGang > 0; t = t - plan.getStep()) {
+
+								// As we run along we will logically remove the previous allocation for
+								// this reservation
+								// if one existed
+								Resource oldResCap = Resource.newInstance(0, 0);
+								if (oldResAllocation != null) {
+										oldResCap = oldResAllocation.getResourcesAtTime(t);
+								}
+
+								// compute net available resources
+								Resource netAvailableRes = Resources.clone(totalCapacity);
+								Resources.addTo(netAvailableRes, oldResCap);
+								Resources.subtractFrom(netAvailableRes,
+												plan.getTotalCommittedResources(t));
+								Resources.subtractFrom(netAvailableRes,
+												tempAssigned.getCapacityAtTime(t));
+
+								// compute maximum number of gangs we could fit
+								//curMaxGang =
+								//    (int) Math.floor(Resources.divide(plan.getResourceCalculator(),
+								//        totalCapacity, netAvailableRes, gang));
+								/** Amber code starts here */
+								curMaxGang =
+										(int) Math.floor(Resources.rsrvDivide(plan.getResourceCalculator(),
+																totalCapacity, netAvailableRes, gang));
+								/** Amber code ends here */
+
+        // pick the minimum between available resources in this instant, and how
+        // many gangs we have to place
+        curMaxGang = Math.min(gangsToPlace, curMaxGang);
+
+        // compare with previous max, and set it. also remember *where* we found
+        // the minimum (useful for next attempts)
+        if (curMaxGang <= maxGang) {
+          maxGang = curMaxGang;
+          minPoint = t;
+        }
+      }
+
+      // if we were able to place any gang, record this, and decrement
+      // gangsToPlace
+      if (maxGang > 0) {
+        gangsToPlace -= maxGang;
+
+        ReservationInterval reservationInt =
+            new ReservationInterval(curDeadline - dur, curDeadline);
+        ReservationRequest reservationRes =
+            ReservationRequest.newInstance(rr.getCapability(),
+                rr.getConcurrency() * maxGang, rr.getConcurrency(),
+                rr.getDuration());
+        // remember occupied space (plan is read-only till we find a plausible
+        // allocation for the entire request). This is needed since we might be
+        // placing other ReservationRequest within the same
+        // ReservationDefinition,
+        // and we must avoid double-counting the available resources
+        tempAssigned.addInterval(reservationInt, reservationRes);
+        allocationRequests.put(reservationInt, reservationRes);
+
+      }
+
+      // reset our new starting point (curDeadline) to the most constraining
+      // point so far, we will look "left" of that to find more places where
+      // to schedule gangs (for sure nothing on the "right" of this point can
+      // fit a full gang.
+      curDeadline = minPoint;
+    }
+
+    // if no gangs are left to place we succeed and return the allocation
+    if (gangsToPlace == 0) {
+      return allocationRequests;
+    } else {
+      // If we are here is becasue we did not manage to satisfy this request.
+      // So we need to remove unwanted side-effect from tempAssigned (needed
+      // for ANY).
+      for (Map.Entry<ReservationInterval, ReservationRequest> tempAllocation :
+        allocationRequests.entrySet()) {
+        tempAssigned.removeInterval(tempAllocation.getKey(),
+            tempAllocation.getValue());
+      }
+      // and return null to signal failure in this allocation
+      return null;
+    }
   }
 
   private boolean computeAllocation(ReservationId reservationId, String user,
@@ -242,80 +527,66 @@ public class GreedyReservationAgent implements ReservationAgent {
    * previous instant in time until the time-window is exhausted or we placed
    * all the user request.
    */
-  private Map<ReservationInterval, ReservationRequest> placeSingleStage(
-      Plan plan, RLESparseResourceAllocation tempAssigned,
-      ReservationRequest rr, long earliestStart, long curDeadline,
-      ReservationAllocation oldResAllocation, final Resource totalCapacity) {
+		private Map<ReservationInterval, ReservationRequest> placeSingleStage(
+						Plan plan, RLESparseResourceAllocation tempAssigned,
+						ReservationRequest rr, long earliestStart, long curDeadline,
+						ReservationAllocation oldResAllocation, final Resource totalCapacity) {
 
-    Map<ReservationInterval, ReservationRequest> allocationRequests =
-        new HashMap<ReservationInterval, ReservationRequest>();
+				Map<ReservationInterval, ReservationRequest> allocationRequests =
+						new HashMap<ReservationInterval, ReservationRequest>();
 
-    // compute the gang as a resource and get the duration
-    Resource gang = Resources.multiply(rr.getCapability(), rr.getConcurrency());
-    long dur = rr.getDuration();
-    long step = plan.getStep();
+				// compute the gang as a resource and get the duration
+				Resource gang = Resources.multiply(rr.getCapability(), rr.getConcurrency());
+				long dur = rr.getDuration();
+				long step = plan.getStep();
 
-		/** Amber code starts here */
-		LOG.info("Amber: original duration: " + dur);
-		float speedup = rr.getSpeedup();
-		float accPercent = rr.getAccPercent();
-		dur = (long)(dur * accPercent / speedup + dur * (1 - accPercent));
-		LOG.info("Amber: refined duration: " + dur);
-		LOG.info("Amber: gang: " + gang);
-		/** Amber code ends here */
+				// ceil the duration to the next multiple of the plan step
+				if (dur % step != 0) {
+						dur += (step - (dur % step));
+				}
 
-    // ceil the duration to the next multiple of the plan step
-    if (dur % step != 0) {
-      dur += (step - (dur % step));
-    }
+				// we know for sure that this division has no remainder (part of contract
+				// with user, validate before
+				int gangsToPlace = rr.getNumContainers() / rr.getConcurrency();
 
-    // we know for sure that this division has no remainder (part of contract
-    // with user, validate before
-    int gangsToPlace = rr.getNumContainers() / rr.getConcurrency();
+				int maxGang = 0;
 
-    int maxGang = 0;
+				// loop trying to place until we are done, or we are considering
+				// an invalid range of times
+				while (gangsToPlace > 0 && curDeadline - dur >= earliestStart) {
 
-    // loop trying to place until we are done, or we are considering
-    // an invalid range of times
-    while (gangsToPlace > 0 && curDeadline - dur >= earliestStart) {
+						// as we run along we remember how many gangs we can fit, and what
+						// was the most constraining moment in time (we will restart just
+						// after that to place the next batch)
+						maxGang = gangsToPlace;
+						long minPoint = curDeadline;
+						int curMaxGang = maxGang;
 
-      // as we run along we remember how many gangs we can fit, and what
-      // was the most constraining moment in time (we will restart just
-      // after that to place the next batch)
-      maxGang = gangsToPlace;
-      long minPoint = curDeadline;
-      int curMaxGang = maxGang;
+						// start placing at deadline (excluded due to [,) interval semantics and
+						// move backward
+						for (long t = curDeadline - plan.getStep(); t >= curDeadline - dur
+										&& maxGang > 0; t = t - plan.getStep()) {
 
-      // start placing at deadline (excluded due to [,) interval semantics and
-      // move backward
-      for (long t = curDeadline - plan.getStep(); t >= curDeadline - dur
-          && maxGang > 0; t = t - plan.getStep()) {
+								// As we run along we will logically remove the previous allocation for
+								// this reservation
+								// if one existed
+								Resource oldResCap = Resource.newInstance(0, 0);
+								if (oldResAllocation != null) {
+										oldResCap = oldResAllocation.getResourcesAtTime(t);
+								}
 
-        // As we run along we will logically remove the previous allocation for
-        // this reservation
-        // if one existed
-        Resource oldResCap = Resource.newInstance(0, 0);
-        if (oldResAllocation != null) {
-          oldResCap = oldResAllocation.getResourcesAtTime(t);
-        }
+								// compute net available resources
+								Resource netAvailableRes = Resources.clone(totalCapacity);
+								Resources.addTo(netAvailableRes, oldResCap);
+								Resources.subtractFrom(netAvailableRes,
+												plan.getTotalCommittedResources(t));
+								Resources.subtractFrom(netAvailableRes,
+												tempAssigned.getCapacityAtTime(t));
 
-        // compute net available resources
-        Resource netAvailableRes = Resources.clone(totalCapacity);
-        Resources.addTo(netAvailableRes, oldResCap);
-        Resources.subtractFrom(netAvailableRes,
-            plan.getTotalCommittedResources(t));
-        Resources.subtractFrom(netAvailableRes,
-            tempAssigned.getCapacityAtTime(t));
-
-        // compute maximum number of gangs we could fit
-        //curMaxGang =
-        //    (int) Math.floor(Resources.divide(plan.getResourceCalculator(),
-        //        totalCapacity, netAvailableRes, gang));
-				/** Amber code starts here */
-        curMaxGang =
-            (int) Math.floor(Resources.rsrvDivide(plan.getResourceCalculator(),
-                totalCapacity, netAvailableRes, gang));
-				/** Amber code ends here */
+								// compute maximum number of gangs we could fit
+								curMaxGang =
+								    (int) Math.floor(Resources.divide(plan.getResourceCalculator(),
+								        totalCapacity, netAvailableRes, gang));
 
         // pick the minimum between available resources in this instant, and how
         // many gangs we have to place

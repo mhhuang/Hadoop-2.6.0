@@ -44,8 +44,30 @@ public abstract class ReservationDefinition {
     rDefinition.setDeadline(deadline);
     rDefinition.setReservationRequests(reservationRequests);
     rDefinition.setReservationName(name);
+				/** Amber code starts here */
+				rDefinition.setNumCpus(0);
+				rDefinition.setNumAccs(0);
+				/** Amber code ends here */
     return rDefinition;
   }
+
+		/** Amber code starts here */
+  @Public
+  @Unstable
+  public abstract int getNumCpus();
+
+  @Public
+  @Unstable
+  public abstract void setNumCpus(int numCpus);
+
+  @Public
+  @Unstable
+  public abstract int getNumAccs();
+
+  @Public
+  @Unstable
+  public abstract void setNumAccs(int numAccs);
+		/** Amber code ends here */
 
   /**
    * Get the arrival time or the earliest time from which the resource(s) can be

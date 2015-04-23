@@ -316,7 +316,9 @@ message ReservationSubmissionRequestProto {
 }
 
 message ReservationSubmissionResponseProto {
-    optional ReservationIdProto reservation_id = 1;
+		optional ReservationIdProto reservation_id = 1;
+		optional int32 num_cpus = 100 [default = 0];
+		optional int32 num_accs = 101 [default = 0];
 }
 
 message ReservationUpdateRequestProto {

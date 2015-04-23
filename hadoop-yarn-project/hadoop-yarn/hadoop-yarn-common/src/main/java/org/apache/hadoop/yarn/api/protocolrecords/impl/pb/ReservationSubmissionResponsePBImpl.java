@@ -98,6 +98,38 @@ public class ReservationSubmissionResponsePBImpl extends
     this.reservationId = reservationId;
   }
 
+		/** Amber code starts here */
+  @Override
+  public int getNumCpus() {
+    ReservationSubmissionResponseProtoOrBuilder p = viaProto ? proto : builder;
+    if (!p.hasNumCpus()) {
+						return 0;
+    }
+				return (p.getNumCpus());
+  }
+
+  @Override
+  public void setNumCpus(int numCpus) {
+    maybeInitBuilder();
+    builder.setNumCpus(numCpus);
+  }
+
+  @Override
+  public int getNumAccs() {
+    ReservationSubmissionResponseProtoOrBuilder p = viaProto ? proto : builder;
+    if (!p.hasNumAccs()) {
+						return 0;
+    }
+				return (p.getNumAccs());
+  }
+
+  @Override
+  public void setNumAccs(int numAccs) {
+    maybeInitBuilder();
+    builder.setNumAccs(numAccs);
+  }
+		/** Amber code ends here */
+
   private ReservationIdPBImpl convertFromProtoFormat(ReservationIdProto p) {
     return new ReservationIdPBImpl(p);
   }

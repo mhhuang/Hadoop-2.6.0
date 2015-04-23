@@ -45,6 +45,10 @@ public abstract class ReservationSubmissionResponse {
     ReservationSubmissionResponse response =
         Records.newRecord(ReservationSubmissionResponse.class);
     response.setReservationId(reservationId);
+				/** Amber code starts here */
+				response.setNumCpus(0);
+				response.setNumAccs(0);
+				/** Amber code ends here */
     return response;
   }
 
@@ -73,4 +77,21 @@ public abstract class ReservationSubmissionResponse {
   @Unstable
   public abstract void setReservationId(ReservationId reservationId);
 
+		/** Amber code starts here */
+  @Public
+  @Unstable
+  public abstract int getNumCpus();
+
+  @Private
+  @Unstable
+  public abstract void setNumCpus(int numCpus);
+
+  @Public
+  @Unstable
+  public abstract int getNumAccs();
+
+  @Private
+  @Unstable
+  public abstract void setNumAccs(int numAccs);
+		/** Amber code ends here */
 }
