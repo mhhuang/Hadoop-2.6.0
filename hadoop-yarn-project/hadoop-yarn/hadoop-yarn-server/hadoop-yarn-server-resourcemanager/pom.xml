@@ -230,7 +230,22 @@
       <groupId>com.sun.jersey.jersey-test-framework</groupId>
       <artifactId>jersey-test-framework-grizzly2</artifactId>
       <scope>test</scope>
-    </dependency>
+				</dependency>
+				<dependency>
+						<groupId>accUCLA</groupId>
+						<artifactId>TaskInfo</artifactId>
+						<version>1.0</version>
+						<scope>system</scope>
+						<systemPath>${basedir}/uclaPackage/TaskInfo.jar</systemPath>
+				</dependency>
+				<dependency>
+						<groupId>accUCLA</groupId>
+						<artifactId>util</artifactId>
+						<version>1.0</version>
+						<scope>system</scope>
+						<systemPath>${basedir}/uclaPackage/util-1.0.jar</systemPath>
+				</dependency>
+
   </dependencies>
 
   <build>

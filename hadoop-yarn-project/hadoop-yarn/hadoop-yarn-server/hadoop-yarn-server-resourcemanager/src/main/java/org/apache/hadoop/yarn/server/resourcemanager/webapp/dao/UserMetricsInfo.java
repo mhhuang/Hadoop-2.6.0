@@ -46,6 +46,9 @@ public class UserMetricsInfo {
   protected long reservedVirtualCores;
   protected long pendingVirtualCores;
   protected long allocatedVirtualCores;
+		protected long reservedAccs;
+		protected long pendingAccs;
+		protected long allocatedAccs;
 
   @XmlTransient
   protected boolean userMetricsAvailable;
@@ -81,6 +84,12 @@ public class UserMetricsInfo {
       this.reservedVirtualCores = userMetrics.getReservedVirtualCores();
       this.pendingVirtualCores = userMetrics.getPendingVirtualCores();
       this.allocatedVirtualCores = userMetrics.getAllocatedVirtualCores();
+ 
+      /** Amber 3 lines */
+      this.reservedAccs = userMetrics.getReservedAccs();
+      this.pendingAccs = userMetrics.getPendingAccs();
+      this.allocatedAccs = userMetrics.getAllocatedAccs();
+ 
     }
   }
 
@@ -135,6 +144,20 @@ public class UserMetricsInfo {
   public long getPendingVirtualCores() {
     return this.pendingVirtualCores;
   }
+
+  /** Amber code starts here */
+  public long getReservedAccs() {
+    return this.reservedAccs;
+  }
+
+  public long getAllocatedAccs() {
+    return this.allocatedAccs;
+  }
+
+  public long getPendingAccs() {
+    return this.pendingAccs;
+  }
+  /** Amber code ends here */
 
   public int getReservedContainers() {
     return this.reservedContainers;

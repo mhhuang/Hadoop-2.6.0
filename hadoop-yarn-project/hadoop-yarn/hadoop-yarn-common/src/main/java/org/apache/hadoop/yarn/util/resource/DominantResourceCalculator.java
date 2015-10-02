@@ -194,4 +194,22 @@ public class DominantResourceCalculator extends ResourceCalculator {
         );
   }
 
+  /** Amber code starts here */
+  @Override
+  public Resource multiplyAndNormalizeDownWOAccs(Resource r, double by,
+      Resource stepFactor) {
+    return Resources.createResource(
+        roundDown(
+            (int)(r.getMemory() * by), 
+            stepFactor.getMemory()
+            ),
+        roundDown(
+            (int)(r.getVirtualCores() * by), 
+            stepFactor.getVirtualCores()
+            ),
+        r.getAccs()
+        );
+  }
+  /** Amber code ends here */
+
 }

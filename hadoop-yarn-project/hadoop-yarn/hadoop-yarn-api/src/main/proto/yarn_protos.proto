@@ -29,6 +29,12 @@ option java_generate_equals_and_hash = true;
 package hadoop.yarn;
 
 import "Security.proto";
+// Amber protocol
+message ContainerShareRateProto {
+  optional ContainerIdProto container_id = 1;
+  optional float share_rate = 2;
+}
+// EOF Amber protocol
 
 message SerializedExceptionProto {
   optional string message = 1;

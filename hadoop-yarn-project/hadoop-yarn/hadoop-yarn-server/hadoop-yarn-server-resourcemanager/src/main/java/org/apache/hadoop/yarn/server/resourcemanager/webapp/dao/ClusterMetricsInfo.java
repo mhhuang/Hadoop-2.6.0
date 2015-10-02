@@ -46,12 +46,19 @@ public class ClusterMetricsInfo {
   protected long availableVirtualCores;
   protected long allocatedVirtualCores;
 
+  /** Amber 3 lines */
+  protected long reservedAccs;
+  protected long availableAccs;
+  protected long allocatedAccs;
+
   protected int containersAllocated;
   protected int containersReserved;
   protected int containersPending;
 
   protected long totalMB;
   protected long totalVirtualCores;
+  /** Amber 1 line */
+  protected long totalAccs; 
   protected int totalNodes;
   protected int lostNodes;
   protected int unhealthyNodes;
@@ -82,12 +89,19 @@ public class ClusterMetricsInfo {
     this.availableVirtualCores = metrics.getAvailableVirtualCores();
     this.allocatedVirtualCores = metrics.getAllocatedVirtualCores();
 
+				/** Amber 3 lines */
+    this.reservedAccs = metrics.getReservedAccs();
+    this.availableAccs = metrics.getAvailableAccs();
+    this.allocatedAccs = metrics.getAllocatedAccs();
+
     this.containersAllocated = metrics.getAllocatedContainers();
     this.containersPending = metrics.getPendingContainers();
     this.containersReserved = metrics.getReservedContainers();
 
     this.totalMB = availableMB + allocatedMB;
     this.totalVirtualCores = availableVirtualCores + allocatedVirtualCores;
+    /** Amber 1 line */
+    this.totalAccs = availableAccs + allocatedAccs;
     this.activeNodes = clusterMetrics.getNumActiveNMs();
     this.lostNodes = clusterMetrics.getNumLostNMs();
     this.unhealthyNodes = clusterMetrics.getUnhealthyNMs();
@@ -144,6 +158,25 @@ public class ClusterMetricsInfo {
   public long getAllocatedVirtualCores() {
     return this.allocatedVirtualCores;
   }
+
+  /** Amber code starts here */
+  public long getReservedAccs() {
+    return this.reservedAccs;
+  }
+
+  public long getAvailableAccs() {
+    return this.availableAccs;
+  }
+
+  public long getAllocatedAccs() {
+    return this.allocatedAccs;
+  }
+
+  public long getTotalAccs() {
+    return this.totalAccs;
+  }
+
+  /** Amber code ends here */
 
   public int getContainersAllocated() {
     return this.containersAllocated;

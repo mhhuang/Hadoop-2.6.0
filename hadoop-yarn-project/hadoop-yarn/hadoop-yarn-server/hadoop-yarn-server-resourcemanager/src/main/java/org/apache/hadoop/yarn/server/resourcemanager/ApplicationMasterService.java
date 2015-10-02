@@ -30,6 +30,22 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+/** Amber import starts here */
+import accUCLA.accAPI.SocketConnector;
+import accUCLA.TaskInfo.AppShareRatePackage;
+import accUCLA.TaskInfo.AppUtilizationPackage;
+import accUCLA.TaskInfo.MsgNode2GAM;
+import accUCLA.TaskInfo.MsgGAM2Node;
+import accUCLA.TaskInfo.ShareRatePackage;
+import accUCLA.TaskInfo.UtilizationPackage;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import org.apache.hadoop.yarn.api.records.ContainerShareRate;
+/** Amber import ends here */
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceAudience.Private;
@@ -119,6 +135,153 @@ public class ApplicationMasterService extends AbstractService implements
     this.rScheduler = scheduler;
     this.rmContext = rmContext;
   }
+
+  /** Amber code starts here */
+  static class ContainerRuntimeInfo {
+    private Container container;
+    private float shareRate; // set it to either 1 (reserved) or 0 (best-effort)
+    private float usageRate;
+    private String location; // cpu, fpga, gpu
+    private boolean notifyAMShareRate;  // true should notify AM when heartbeating 
+    private boolean notifyNMShareRate;
+    private boolean notifyAMLocation;  // true should notify AM when heartbeating 
+    private boolean notifyNMLocation;
+
+    public ContainerRuntimeInfo (Container c) {
+      container = c;
+      shareRate = 0.0f;
+      usageRate = 0.0f; // actual usage
+      location = "";    // cpu fpga 
+      notifyAMShareRate = false;
+      notifyNMShareRate = false;
+      notifyAMLocation = false;
+      notifyNMLocation = false;
+    }
+
+    public Container getContainer() {
+      return container;
+    }
+
+    public void setShareRate(float rate) {
+      if (rate > shareRate + 0.001f || rate < shareRate - 0.001f) {
+        notifyAMShareRate = true;
+        notifyNMShareRate = true;
+      }
+      shareRate = rate;
+
+      setUsageRate(rate);
+    }
+    public float getShareRate() {
+      return shareRate;
+    }
+
+    public void setUsageRate(float rate) {
+      usageRate = rate;
+    }
+    public float getUsageRate() {
+      return usageRate;
+    }
+
+    public void setLocation(String l) {
+      if (!l.equals(location)) {
+        notifyAMLocation = true;
+        notifyNMLocation = true;
+      }
+      location = l;
+    }
+    public String getLocation() {
+      return location;
+    }
+
+    public boolean pullNotifyAMShareRate() {
+      boolean ret = notifyAMShareRate;
+      notifyAMShareRate = false;
+      return ret;
+    }
+    public boolean pullNotifyNMShareRate() {
+      boolean ret = notifyNMShareRate;
+      notifyNMShareRate = false;
+      return ret;
+    }
+    public boolean pullNotifyAMLocation() { 
+      boolean ret = notifyAMLocation;
+      notifyAMLocation = false;
+      return ret;
+    }
+    public boolean pullNotifyNMLocation() { 
+      boolean ret = notifyNMLocation;
+      notifyNMLocation = false;
+      return ret;
+    }
+
+  }
+
+  // note down allocated Accs
+  // fixme: should note down cpus as well
+  private static Map<String, Map<ApplicationId, ContainerRuntimeInfo>> mAccToContainer =
+    new HashMap<String, Map<ApplicationId, ContainerRuntimeInfo>>();
+
+  private static Map<String, Float> mAccToUtilization = 
+    new HashMap<String, Float>();
+
+  private static List<String> mNodeList = new ArrayList<String>();
+
+  private static List<String> mAccList = new ArrayList<String>();
+
+  //private static Map<ApplicationId, Float> mAppIdToRequestedShares = 
+  //  new HashMap<ApplicationId, Float>(); 
+
+  //private static Map<ApplicationId, Float> mAppIdToLaggingIndicator = 
+  //  new HashMap<ApplicationId, Float>();
+
+  //private static Map<ContainerId, Float> mContainerIdToEnergyGain = 
+  //  new HashMap<ContainerId, Float>();
+
+  //// workaround, currently spark sends the same energyGain for each app
+  //private static Map<ApplicationId, Float> mAppIdToEnergyGain = 
+  //  new HashMap<ApplicationId, Float>();
+
+  private void addContainer(Container c, String type, boolean reserved) {
+    // add to nodeToAccContainerList
+    String location = c.getNodeId().getHost();
+    LOG.debug("GAM: add Acc Container, location: " + location + " container: " +
+        c.toString());
+    ApplicationId appId = c.getId().getApplicationAttemptId().getApplicationId();
+
+    // add location --> appId --> container
+    Map<ApplicationId, ContainerRuntimeInfo> appToContainer = 
+      mAccToContainer.get(location);
+    if (appToContainer == null) {
+      appToContainer = new HashMap<ApplicationId, ContainerRuntimeInfo>();
+      mAccToContainer.put(location, appToContainer);
+    }
+
+    ContainerRuntimeInfo cRTInfo = appToContainer.get(appId);
+    if (cRTInfo == null) {
+      cRTInfo = new ContainerRuntimeInfo(c);
+      cRTInfo.setLocation(type);
+      cRTInfo.setShareRate(reserved ? 1.0f : 0.0f);
+      appToContainer.put(appId, cRTInfo);
+    }
+  }
+
+  private void deleteContainer(ContainerId cId) {
+    // it may not be ACC container
+    LOG.info("YARN delete/completed container with ID: " + cId.toString());
+    for(Map<ApplicationId, ContainerRuntimeInfo> appToContainer :
+        mAccToContainer.values()) {
+      for(Iterator<Map.Entry<ApplicationId, ContainerRuntimeInfo>> it 
+          = appToContainer.entrySet().iterator(); it.hasNext(); ) {
+        Map.Entry<ApplicationId, ContainerRuntimeInfo> entry = it.next();
+        if (entry.getValue().getContainer().getId().equals(cId)) {
+          it.remove();
+    // TODO, notify NAM?
+          break;
+        }
+      }
+    }
+  }
+ /** Amber code ends here */
 
   @Override
   protected void serviceStart() throws Exception {
@@ -525,6 +688,65 @@ public class ApplicationMasterService extends AbstractService implements
         }
       }
 
+      /** Amber code starts here */
+      if (ask.size() > 0) {
+        LOG.info("Amber: YARN received resource requests:");
+        for(ResourceRequest rRequest: ask) {
+          LOG.info(rRequest.toString());
+        }
+      }
+
+      // update mNodeList
+      mNodeList = this.rScheduler.getSlaveIps();
+      for(String ip : mNodeList) {
+        LOG.info("Amber: Alive node ip " + ip);
+      }
+
+
+      // talking to nodeAM
+      // update mAccList & mAccToUtilization
+      getUtilizationFromAllNodeAMs();
+
+
+      // Parse requests
+      List<ResourceRequest> cpuAsk = new ArrayList<ResourceRequest>();
+      List<ResourceRequest> accAsk = new ArrayList<ResourceRequest>();
+
+      for(ResourceRequest rRequest: ask) {
+        if (rRequest.getCapability().getAccs() == 0) {
+          cpuAsk.add(rRequest);
+        }
+      }
+      for(ResourceRequest rRequest: ask) {
+        if (rRequest.getCapability().getAccs() > 0) {
+          accAsk.add(rRequest);
+        }
+      }
+
+      int numRequestedAccs = 0;
+      for(ResourceRequest rRequest: accAsk) {
+        numRequestedAccs += rRequest.getNumContainers();
+      }
+      if (numRequestedAccs > mAccList.size()) {
+        LOG.warn("Amber GAM WARN: Requested number of accs is more than available. " + 
+            "requested: " + numRequestedAccs + " available: " + mAccList.size());
+      }
+
+      List<ResourceRequest> nodeSpecificResourceRequests = 
+        getNodeSpecificAccRequests(accAsk, request.getReserved());
+
+      // combine node specific requests with cpu requests
+      ask.clear();
+      ask.addAll(cpuAsk);
+      ask.addAll(nodeSpecificResourceRequests);
+
+      for(ResourceRequest rRequest: ask) {
+        LOG.debug("Amber GAM: Refined requests: " + rRequest.toString());
+      }
+
+      LOG.info("Amber GAM: Proceed to yarn");
+      /** Amber code ends here */
+
       // Send new requests to appAttempt.
       Allocation allocation =
           this.rScheduler.allocate(appAttemptId, ask, release, 
@@ -567,6 +789,57 @@ public class ApplicationMasterService extends AbstractService implements
         }
         allocateResponse.setUpdatedNodes(updatedNodeReports);
       }
+						/** Amber code starts here */
+
+						// remove just finished containers
+						for(ContainerId cId: this.rScheduler.pullJustFinishedAccContainers()) {
+								deleteContainer(cId);
+						}
+						// update Acc Containers, reserved container get shareRate = 1.0
+						List<Container> allocatedContainers = allocation.getContainers();
+						for(Container c : allocatedContainers) {
+								if (c.getResource().getAccs() > 0) {
+										addContainer(c, "fpga", request.getReserved());
+								} 
+						}
+
+						//updateAllAccShareRates_EVEN(appAttemptId.getApplicationId(), 
+						//				mAppIdToRequestedShares.get(appAttemptId.getApplicationId()) == null ? 0.0f :
+						//				mAppIdToRequestedShares.get(appAttemptId.getApplicationId()));
+
+      //// no longer notify AM about share rate
+						//// Find containers location changes 
+						//// Matched by ApplicationId
+						//List<ContainerShareRate> appShareRate = new ArrayList<ContainerShareRate>();
+						//for(Map<ApplicationId, ContainerRuntimeInfo> appToContainer : 
+						//				mAccToContainer.values()) {
+						//		ContainerRuntimeInfo cRTInfo = appToContainer.get(
+						//						appAttemptId.getApplicationId());
+						//		if (cRTInfo != null) {
+						//				if (cRTInfo.pullNotifyAMShareRate()) {
+						//						ContainerShareRate cSR = ContainerShareRate.newInstance(
+						//										cRTInfo.getContainer().getId(), cRTInfo.getShareRate());
+						//						appShareRate.add(cSR);
+						//						LOG.debug("Amber GAM: AppId: " + appAttemptId.getApplicationId() +
+						//										" container: " + cSR.getContainerId() +
+						//										" share rate: " + Float.toString(cSR.getShareRate()));
+						//				}
+						//		}
+						//}
+						sendAppShareRateToNodeAMs();
+
+						//// add cpu share rate = 0
+						//for(Container c : allocatedContainers) {
+						//		if (c.getResource().getAccs() == 0) {
+						//				ContainerShareRate cSR = ContainerShareRate.newInstance(c.getId(), 0);
+						//				appShareRate.add(cSR);
+						//		} 
+						//}
+
+						//allocateResponse.setContainerShareRates(appShareRate);
+
+			   /** Amber code ends here */
+
 
       allocateResponse.setAllocatedContainers(allocation.getContainers());
       allocateResponse.setCompletedContainersStatuses(appAttempt
@@ -608,7 +881,141 @@ public class ApplicationMasterService extends AbstractService implements
       return allocateResponse;
     }    
   }
-  
+		/** Amber code starts here */
+
+		private List<ResourceRequest>	getNodeSpecificAccRequests(
+						List<ResourceRequest> accAsk,
+      boolean reserved) {
+				if (accAsk.size() == 0)
+						return accAsk;
+				// TODO sort accAsk via priority & speedup so we can process them in order 
+
+				// syntax check
+				int total_requested = 0;
+				int i;
+				for(i = 0; i < accAsk.size(); i++) {
+						total_requested += accAsk.get(i).getNumContainers();
+						if (total_requested > mAccList.size())
+								break;
+				}
+				if (i < accAsk.size()) {
+						accAsk = accAsk.subList(0, i);
+						LOG.error("GAM: app requesting too many accs, truncating requests");
+				}
+
+				// Sort mAcclist via utilization
+				List<String> sortedAccList = new ArrayList<String>();
+    if (reserved) {
+      sortedAccList = sortAccsByReservation();
+						LOG.info("GAM: sorted acc by reservation ");
+						for(String acc : sortedAccList)
+								LOG.info("GAM: " + acc);
+    } else {
+      sortedAccList = sortAccsByUtilization();
+				}
+
+    // TODO if already reserved, do not allocate
+      
+
+				List<ResourceRequest> nodeRequestList = 
+						new ArrayList<ResourceRequest>();
+
+				i = 0;
+				for(ResourceRequest rRequest : accAsk) { 
+						int numRequestedAccs = rRequest.getNumContainers();
+
+						List<ResourceRequest> nodeRequestsSingleAsk = 
+								getNodeSpecificSingleAccRequest(rRequest, 
+												sortedAccList.subList(i, i + numRequestedAccs));
+
+						// TODO multiple requests may needs merge? 
+						nodeRequestList.addAll(nodeRequestsSingleAsk);
+
+						i += numRequestedAccs;
+				}
+				return nodeRequestList;
+		}
+
+		// sort mAccList by utilization statistics in mAccToUtilization
+		private List<String> sortAccsByUtilization() {
+				List<String> ret = new ArrayList<String>(mAccList);
+				Comparator<String> cmp = new Comparator<String>() {
+						public int compare(String o1, String o2) {
+								// TODO better check map null
+								return mAccToUtilization.get(o1).compareTo(mAccToUtilization.get(o2));
+						}
+				};
+				Collections.sort(ret, cmp);
+				return ret;
+		}
+
+		// sort mAccList by reservation from 0 to 1 
+		private List<String> sortAccsByReservation() {
+				List<String> ret = new ArrayList<String>(mAccList);
+    final Map<String, Float> accReservedRate = new HashMap<String, Float>();
+    for(String acc : ret) {
+      float totalRate = 0;
+
+						Map<ApplicationId, ContainerRuntimeInfo> appToContainer 
+								= mAccToContainer.get(acc);
+						if (appToContainer != null) {
+								for(Map.Entry<ApplicationId, ContainerRuntimeInfo> entry :
+												appToContainer.entrySet()) {
+										totalRate += entry.getValue().getShareRate(); 
+								}
+						}
+
+      accReservedRate.put(acc, totalRate);
+				}
+				Comparator<String> cmp = new Comparator<String>() {
+						public int compare(String o1, String o2) {
+								return accReservedRate.get(o2).compareTo(accReservedRate.get(o1));
+						}
+				};
+				Collections.sort(ret, cmp);
+				return ret;
+		}
+
+
+		// Generate refined resource requests on specified locations
+		private List<ResourceRequest> getNodeSpecificSingleAccRequest(
+						ResourceRequest rRequest, List<String> locations) {
+				List<ResourceRequest> nodeRequestList = new ArrayList<ResourceRequest>();
+
+				Resource accCapability = rRequest.getCapability();
+				ResourceRequest accRackRequest = ResourceRequest.newInstance(
+								rRequest.getPriority(), "/default-rack", accCapability,
+								0, false);
+				ResourceRequest accAnyRequest = ResourceRequest.newInstance(
+								rRequest.getPriority(), "*", accCapability,
+								0, false);
+
+				int numRequestedAccs = rRequest.getNumContainers();
+				int numFoundAccs = 0;
+				for(int i = 0; i < numRequestedAccs; i++) {
+						ResourceRequest nodeRequest = ResourceRequest.newInstance(
+										rRequest.getPriority(), locations.get(i), accCapability,
+										1, true);
+						nodeRequestList.add(nodeRequest);
+						numFoundAccs++;
+				}
+
+				addRackAndAnyRequest(accRackRequest, accAnyRequest,
+								numFoundAccs, nodeRequestList);
+
+				return nodeRequestList;
+		}
+
+		private void addRackAndAnyRequest(
+						ResourceRequest rack,	ResourceRequest any,
+						int numContainers, List<ResourceRequest> requestList) {
+				rack.setNumContainers(numContainers);
+				any.setNumContainers(numContainers);
+				requestList.add(rack);
+				requestList.add(any);
+		}
+		/** Amber code ends here */
+
   private PreemptionMessage generatePreemptionMessage(Allocation allocation){
     PreemptionMessage pMsg = null;
     // assemble strict preemption request
@@ -712,4 +1119,139 @@ public class ApplicationMasterService extends AbstractService implements
   public Server getServer() {
     return this.server;
   }
+		/** Amber code starts here */
+		private void getUtilizationFromAllNodeAMs() throws IOException {
+				LOG.info("GAM: get utilization from NodeAMs");
+
+				Set<String> originalAccSet = new HashSet<String>(mAccList);
+				mAccList.clear();
+
+				for(String node : mNodeList) {
+						SocketConnector connector = new SocketConnector(node,5000);
+						connector.buildConnection( 0 );
+						connector.send(1);
+						int msg_length = connector.receive( );
+						byte[] msg_response = connector.receive_byte( msg_length );
+						connector.closeConnection( );
+
+						MsgNode2GAM response = MsgNode2GAM.parseFrom(msg_response);
+						if (response.getPackageList().size() == 0) // no acc on this node
+								continue; 
+
+						LOG.info("GAM: responses from node: " + node);
+
+						// fixme assume only one acc on each node
+						UtilizationPackage utilizationPkg = response.getPackage(0);
+
+						List<AppUtilizationPackage> appUtiPkg = utilizationPkg.getPackageList(); 
+						float nodeTotalUsage = 0;
+						for(AppUtilizationPackage pkg : appUtiPkg) {
+								String appIdStr = pkg.getApplicationId();
+								float usage = (float)pkg.getUtilization();
+								ContainerRuntimeInfo cRTInfo = getContainerInfoByAppIdOnNode(
+												appIdStr, node);
+								if(cRTInfo == null) {
+										LOG.error("GAM: cannot found appId " + appIdStr + " on node ");
+										continue;
+								}
+								cRTInfo.setUsageRate(usage);
+
+								nodeTotalUsage += usage;
+								LOG.info("GAM: container: " + cRTInfo.getContainer().getId() +
+												": usage: "+ String.valueOf(usage));
+						}
+
+
+						// update accs & add its utilization on the node
+						mAccList.add(node);
+						mAccToUtilization.put(node, nodeTotalUsage);
+
+				}
+				Set<String> newAccSet = new HashSet<String>(mAccList);
+				if (!newAccSet.equals(originalAccSet) && (originalAccSet.size() != 0))
+						LOG.error("GAM: Do NOT support acc configuration changes at run-time!");
+		}
+
+		private ContainerRuntimeInfo getContainerInfoByAppIdOnNode(String appIdStr,
+						String node) {
+				Map<ApplicationId, ContainerRuntimeInfo> appToContainer = 
+						mAccToContainer.get(node);
+
+				if (appToContainer == null) return null;
+				for(ApplicationId appId : appToContainer.keySet()) {
+						if (appId.toString().equals(appIdStr))
+								return appToContainer.get(appId);
+				}
+				return null;
+		}
+
+		private void sendAppShareRateToNodeAMs() throws IOException {
+				for(String acc : mAccList) {
+						LOG.info("GAM: sending share rates to nodeAM @ " + acc);
+						Map<ApplicationId, Float> appIdToShareRate = 
+								getAppShareRateOnNode(acc);
+						sendAppShareRateToNodeAM(acc, appIdToShareRate);
+				}
+		}
+
+		private Map<ApplicationId, Float> getAppShareRateOnNode(String acc) {
+				Map<ApplicationId, Float> appToShareRate =
+						new HashMap<ApplicationId, Float>();
+				Map<ApplicationId, ContainerRuntimeInfo> appToContainer 
+						= mAccToContainer.get(acc);
+				if (appToContainer == null)
+						return appToShareRate;
+				for(Map.Entry<ApplicationId, ContainerRuntimeInfo> entry : 
+								appToContainer.entrySet()) {
+						if (entry.getValue().pullNotifyNMShareRate())
+								appToShareRate.put(entry.getKey(), entry.getValue().getShareRate());
+				}
+				return appToShareRate;
+		}
+
+		private void sendAppShareRateToNodeAM(String accIP, 
+						Map<ApplicationId, Float> appToShareRate) throws IOException {
+
+				MsgGAM2Node.Builder msg = MsgGAM2Node.newBuilder();
+				for(Map.Entry<ApplicationId, Float> entry : appToShareRate.entrySet()) {
+						AppShareRatePackage.Builder appShareRatePkg = AppShareRatePackage.newBuilder();
+
+						// fixme assume only one acc on each node
+						ShareRatePackage pkg = ShareRatePackage.newBuilder()
+								.setAccType("fpga")
+								.setSharingRate((double)entry.getValue())
+								.build();
+
+						appShareRatePkg.setApplicationId(entry.getKey().toString());
+						appShareRatePkg.addPackage(pkg);
+
+						LOG.info("GAM: AppId: " + entry.getKey().toString() + 
+										"shareRate: " + String.valueOf(entry.getValue()));
+						msg.addPackage(appShareRatePkg.build());
+				}
+
+				byte[] msg_byte = msg.build().toByteArray();
+				SocketConnector connector = new SocketConnector(accIP,5006);
+				connector.buildConnection( 0 );
+				connector.send(msg_byte.length);
+				connector.send(msg_byte);
+				connector.closeConnection( );
+		}
+
+		//private void updateAllAccShareRates_EVEN(ApplicationId appId, 
+		//				float requestedShare) {
+		//		LOG.info("GAM: updateAllAccShareRates_EVEN");
+
+		//		for(Map<ApplicationId, ContainerRuntimeInfo> appIdToContainer :
+		//						mAccToContainer.values()) {
+		//				int nofContainers = appIdToContainer.size();
+		//				if (nofContainers == 0) continue;
+		//				float averageShare = 1/(float)nofContainers;
+		//				for(ContainerRuntimeInfo cRTInfo : appIdToContainer.values())
+		//						cRTInfo.setShareRate(averageShare);
+		//		}
+
+
+		//}
+	/** Amber code ends here */
 }

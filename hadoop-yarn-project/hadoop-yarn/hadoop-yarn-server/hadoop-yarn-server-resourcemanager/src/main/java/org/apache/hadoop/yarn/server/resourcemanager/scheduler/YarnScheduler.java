@@ -53,6 +53,15 @@ import org.apache.hadoop.yarn.proto.YarnServiceProtos.SchedulerResourceTypes;
  */
 public interface YarnScheduler extends EventHandler<SchedulerEvent> {
 
+  /** Amber code starts here */
+  @Public
+  @Stable
+  public List<ContainerId> pullJustFinishedAccContainers();
+  @Public
+  @Stable
+  public List<String> getSlaveIps();
+  /** Amber code ends here */
+
   /**
    * Get queue information
    * @param queueName queue name

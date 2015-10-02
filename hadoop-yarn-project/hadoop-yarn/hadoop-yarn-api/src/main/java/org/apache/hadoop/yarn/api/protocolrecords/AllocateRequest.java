@@ -79,8 +79,39 @@ public abstract class AllocateRequest {
     allocateRequest.setReleaseList(containersToBeReleased);
     allocateRequest.setResourceBlacklistRequest(resourceBlacklistRequest);
     allocateRequest.setIncreaseRequests(increaseRequests);
+				/** Amber starts */
+    allocateRequest.setReserved(false);
+				/** Amber ends */
     return allocateRequest;
   }
+
+		/** Amber starts */
+  @Public
+  @Stable
+  public static AllocateRequest newInstance(int responseID, float appProgress,
+      List<ResourceRequest> resourceAsk,
+      List<ContainerId> containersToBeReleased,
+      ResourceBlacklistRequest resourceBlacklistRequest,
+      List<ContainerResourceIncreaseRequest> increaseRequests,
+      boolean reserved) {
+    AllocateRequest allocateRequest = Records.newRecord(AllocateRequest.class);
+    allocateRequest.setResponseId(responseID);
+    allocateRequest.setProgress(appProgress);
+    allocateRequest.setAskList(resourceAsk);
+    allocateRequest.setReleaseList(containersToBeReleased);
+    allocateRequest.setResourceBlacklistRequest(resourceBlacklistRequest);
+    allocateRequest.setIncreaseRequests(increaseRequests);
+    allocateRequest.setReserved(reserved);
+    return allocateRequest;
+  }
+  @Public
+  @Stable
+  public abstract boolean getReserved();
+
+  @Public
+  @Stable
+  public abstract void setReserved(boolean reserved);
+		/** Amber ends */
   
   /**
    * Get the <em>response id</em> used to track duplicate responses.

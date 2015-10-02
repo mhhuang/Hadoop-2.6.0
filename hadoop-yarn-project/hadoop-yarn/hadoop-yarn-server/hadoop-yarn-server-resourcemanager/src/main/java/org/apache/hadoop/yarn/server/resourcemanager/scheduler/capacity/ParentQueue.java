@@ -538,8 +538,12 @@ public class ParentQueue extends AbstractCSQueue {
       // check to see if we could potentially use this node instead of a reserved
       // node
 
+      //Resource reservedResources = Resources.createResource(getMetrics()
+      //    .getReservedMB(), getMetrics().getReservedVirtualCores());
+      /** Amber */
       Resource reservedResources = Resources.createResource(getMetrics()
-          .getReservedMB(), getMetrics().getReservedVirtualCores());
+          .getReservedMB(), getMetrics().getReservedVirtualCores(),
+          getMetrics().getReservedAccs());
       float capacityWithoutReservedCapacity = Resources.divide(
           resourceCalculator, clusterResource,
           Resources.subtract(usedResources, reservedResources),

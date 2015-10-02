@@ -109,7 +109,12 @@ public class CapacitySchedulerPlanFollower implements PlanFollower {
     // first we publish to the plan the current availability of resources
     Resource clusterResources = scheduler.getClusterResource();
     float planAbsCap = planQueue.getAbsoluteCapacity();
-    Resource planResources = Resources.multiply(clusterResources, planAbsCap);
+    //Resource planResources = Resources.multiply(clusterResources, planAbsCap);
+    /** Amber code starts here */
+    // make sure accs won't be scaled out
+    Resource planResources = Resources.multiplyWOAccs(clusterResources, planAbsCap);
+				LOG.info("Amber planResources: {} ", planResources);
+    /** Amber code ends here */
     plan.setTotalCapacity(planResources);
 
     Set<ReservationAllocation> currentReservations =
@@ -209,9 +214,14 @@ public class CapacitySchedulerPlanFollower implements PlanFollower {
         float targetCapacity = 0f;
         if (planResources.getMemory() > 0
             && planResources.getVirtualCores() > 0) {
+          //targetCapacity =
+          //    Resources.divide(scheduler.getResourceCalculator(),
+          //        clusterResources, capToAssign, planResources);
+          /** Amber FIXME seems necessary */
           targetCapacity =
-              Resources.divide(scheduler.getResourceCalculator(),
+              Resources.rsrvDivideMax(scheduler.getResourceCalculator(),
                   clusterResources, capToAssign, planResources);
+          /* Amber code ends here */
         }
         if (LOG.isDebugEnabled()) {
           LOG.debug(
@@ -225,6 +235,11 @@ public class CapacitySchedulerPlanFollower implements PlanFollower {
         if (res.containsGangs()) {
           maxCapacity = targetCapacity;
         }
+								/* Amber FIXME may not needed */
+        // application will start immediately when the targetCapacity > 0 ?
+        // maxCapacity does not matter?
+        maxCapacity = 1.0f;  //FIXME don't remember if this line should be added
+								/* Amber FIXME may not needed */
         try {
           scheduler.setEntitlement(currResId, new QueueEntitlement(
               targetCapacity, maxCapacity));
@@ -354,8 +369,12 @@ public class CapacitySchedulerPlanFollower implements PlanFollower {
         resResource =
             Resources.subtract(
                 reservation.getResourcesAtTime(now),
-                Resources.multiply(scheduler.getClusterResource(),
+                //Resources.multiply(scheduler.getClusterResource(),
+                //    resQueue.getAbsoluteCapacity()));
+                /** Amber code starts here */
+                Resources.multiplyWOAccs(scheduler.getClusterResource(),
                     resQueue.getAbsoluteCapacity()));
+                /** Amber code ends here */
       } else {
         resResource = reservation.getResourcesAtTime(now);
       }

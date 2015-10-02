@@ -113,6 +113,16 @@ import com.google.common.base.Preconditions;
 @SuppressWarnings("unchecked")
 public class FairScheduler extends
     AbstractYarnScheduler<FSAppAttempt, FSSchedulerNode> {
+  /** Amber code starts here */
+  @Override
+  public List<ContainerId> pullJustFinishedAccContainers() {
+    return new ArrayList<ContainerId>();
+  }
+  @Override
+  public List<String> getSlaveIps() {
+    return new ArrayList<String>();
+  }
+  /** Amber code ends here */
   private FairSchedulerConfiguration conf;
 
   private Resource incrAllocation;

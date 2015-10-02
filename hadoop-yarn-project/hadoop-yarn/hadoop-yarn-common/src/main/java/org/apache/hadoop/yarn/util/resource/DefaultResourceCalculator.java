@@ -70,11 +70,11 @@ public class DefaultResourceCalculator extends ResourceCalculator {
             stepFactor.getMemory()),
             maximumResource.getMemory());
     //return Resources.createResource(normalizedMemory);
-		/** Amber code starts here */
-		Resource normalizedResource = Resources.createResource(normalizedMemory);
-		normalizedResource.setAccs(r.getAccs()); 
-		return normalizedResource; 
-		/** Amber code ends here */
+    /** Amber code starts here */
+    Resource normalizedResource = Resources.createResource(normalizedMemory);
+    normalizedResource.setAccs(r.getAccs()); 
+    return normalizedResource; 
+    /** Amber code ends here */
   }
 
   @Override
@@ -114,5 +114,16 @@ public class DefaultResourceCalculator extends ResourceCalculator {
             )
         );
   }
+
+		/** Amber code starts here */
+  // Accelerators are not normalized
+  @Override
+  public Resource multiplyAndNormalizeDownWOAccs(Resource r, double by,
+      Resource stepFactor) {
+    int mem = roundDown( (int)(r.getMemory() * by), 
+            stepFactor.getMemory());
+    return Resources.createResource( mem, (mem > 0) ? 1 : 0, r.getAccs());
+  }
+		/** Amber code starts here */
 
 }

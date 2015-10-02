@@ -160,6 +160,17 @@ public class ResourceSchedulerWrapper
     queueLock = new ReentrantLock();
   }
 
+  /** Amber code starts here */
+  @Override
+  public List<ContainerId> pullJustFinishedAccContainers() {
+    return new ArrayList<ContainerId>();
+  }
+  @Override
+  public List<String> getSlaveIps() {
+    return new ArrayList<String>();
+  }
+  /** Amber code ends here */
+
   @Override
   public void setConf(Configuration conf) {
     this.conf = conf;

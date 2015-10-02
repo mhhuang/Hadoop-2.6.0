@@ -259,6 +259,15 @@
     <value>32</value>
   </property>
 
+  <!-- AMber -->
+  <property>
+    <description>The maximum allocation for every container request at the RM,
+    in terms of accelerators. Requests higher than this won't take effect,
+    and will get capped to this value.</description>
+    <name>yarn.scheduler.maximum-allocation-accs</name>
+    <value>1</value>
+  </property>
+
   <property>
     <description>Enable RM to recover state after starting. If true, then 
       yarn.resourcemanager.store.class must be specified. </description>

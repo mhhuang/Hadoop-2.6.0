@@ -183,6 +183,8 @@ function showGraph(refresh) {
       switch (resource) {
         case "Memory": labelY = "Allocation Memory (GB)"; break;
         case "CPU": labelY = "Virutal Cores (#)"; break;
+        // Amber
+        case "ACC": labelY = "Accelerators (#)"; break;
         default:
           labelY = "Allocation Memory (GB)";
       }

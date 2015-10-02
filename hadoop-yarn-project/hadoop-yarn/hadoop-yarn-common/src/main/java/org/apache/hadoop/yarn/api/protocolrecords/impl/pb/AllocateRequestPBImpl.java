@@ -120,6 +120,21 @@ public class AllocateRequestPBImpl extends AllocateRequest {
     }
     viaProto = false;
   }
+  
+  /** Amber starts */
+  @Override
+  public boolean getReserved() {
+    AllocateRequestProtoOrBuilder p = viaProto ? proto : builder;
+    return p.getReserved();
+  }
+
+  @Override
+  public void setReserved(boolean reserved) {
+    maybeInitBuilder();
+    builder.setReserved(reserved);
+  }
+  /** Amber ends */
+
 
   @Override
   public int getResponseId() {

@@ -75,16 +75,26 @@ public class CapacityReservationSystem extends AbstractReservationSystem {
     // Calculate the max plan capacity
     Resource minAllocation = capScheduler.getMinimumResourceCapability();
     ResourceCalculator rescCalc = capScheduler.getResourceCalculator();
+    //Resource totCap =
+    //    rescCalc.multiplyAndNormalizeDown(capScheduler.getClusterResource(),
+    //        planQueue.getAbsoluteCapacity(), minAllocation);
+    /** Amber code starts here */
+    // enrich the queue with all the accelerators 
     Resource totCap =
-        rescCalc.multiplyAndNormalizeDown(capScheduler.getClusterResource(),
+        rescCalc.multiplyAndNormalizeDownWOAccs(capScheduler.getClusterResource(),
             planQueue.getAbsoluteCapacity(), minAllocation);
+    LOG.info("Amber: capScheduler.getClusterResource() {}", capScheduler.getClusterResource());
+    LOG.info("Amber: planQueue.getAbsoluteCapacity {}", planQueue.getAbsoluteCapacity());
+    LOG.info("Amber: totCap {}", totCap);
+
+    /** Amber code ends here */
     Plan plan =
         new InMemoryPlan(capScheduler.getRootQueueMetrics(), adPolicy,
             getAgent(planQueuePath), totCap, planStepSize, rescCalc,
             minAllocation, capScheduler.getMaximumResourceCapability(),
             planQueueName, getReplanner(planQueuePath), capScheduler
                 .getConfiguration().getMoveOnExpiry(planQueuePath));
-    LOG.info("Intialized plan {0} based on reservable queue {1}",
+    LOG.info("Intialized plan {} based on reservable queue {}",
         plan.toString(), planQueueName);
     return plan;
   }

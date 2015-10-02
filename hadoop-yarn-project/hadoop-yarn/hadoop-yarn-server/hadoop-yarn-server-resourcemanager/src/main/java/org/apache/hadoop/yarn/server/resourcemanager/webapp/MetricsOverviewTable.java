@@ -75,6 +75,10 @@ public class MetricsOverviewTable extends HtmlBlock {
         th().$class("ui-state-default")._("VCores Used")._().
         th().$class("ui-state-default")._("VCores Total")._().
         th().$class("ui-state-default")._("VCores Reserved")._().
+        /** Amber 3 lines */
+        th().$class("ui-state-default")._("Accs Used")._().
+        th().$class("ui-state-default")._("Accs Total")._().
+        th().$class("ui-state-default")._("Accs Reserved")._().
         th().$class("ui-state-default")._("Active Nodes")._().
         th().$class("ui-state-default")._("Decommissioned Nodes")._().
         th().$class("ui-state-default")._("Lost Nodes")._().
@@ -100,6 +104,10 @@ public class MetricsOverviewTable extends HtmlBlock {
         td(String.valueOf(clusterMetrics.getAllocatedVirtualCores())).
         td(String.valueOf(clusterMetrics.getTotalVirtualCores())).
         td(String.valueOf(clusterMetrics.getReservedVirtualCores())).
+        /** Amber 3 lines */
+        td(String.valueOf(clusterMetrics.getAllocatedAccs())).
+        td(String.valueOf(clusterMetrics.getTotalAccs())).
+        td(String.valueOf(clusterMetrics.getReservedAccs())).
         td().a(url("nodes"),String.valueOf(clusterMetrics.getActiveNodes()))._().
         td().a(url("nodes/decommissioned"),String.valueOf(clusterMetrics.getDecommissionedNodes()))._().
         td().a(url("nodes/lost"),String.valueOf(clusterMetrics.getLostNodes()))._().
@@ -129,6 +137,10 @@ public class MetricsOverviewTable extends HtmlBlock {
             th().$class("ui-state-default")._("VCores Used")._().
             th().$class("ui-state-default")._("VCores Pending")._().
             th().$class("ui-state-default")._("VCores Reserved")._().
+												/** Amber 3 lines */
+												th().$class("ui-state-default")._("Accs Used")._().
+												th().$class("ui-state-default")._("Accs Pending")._().
+												th().$class("ui-state-default")._("Accs Reserved")._().
           _().
         _().
         tbody().$class("ui-widget-content").
@@ -151,6 +163,10 @@ public class MetricsOverviewTable extends HtmlBlock {
             td(String.valueOf(userMetrics.getAllocatedVirtualCores())).
             td(String.valueOf(userMetrics.getPendingVirtualCores())).
             td(String.valueOf(userMetrics.getReservedVirtualCores())).
+            /** Amber 3 lines */
+            td(String.valueOf(userMetrics.getAllocatedAccs())).
+            td(String.valueOf(userMetrics.getPendingAccs())).
+            td(String.valueOf(userMetrics.getReservedAccs())).
           _().
         _()._();
         

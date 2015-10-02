@@ -400,6 +400,15 @@ public class BuilderUtils {
     return resource;
   }
 
+  /** Amber code starts here */
+  public static Resource newResource(int memory, int vCores, int accs) {
+    Resource resource = recordFactory.newRecordInstance(Resource.class);
+    resource.setMemory(memory);
+    resource.setVirtualCores(vCores);
+    resource.setAccs(accs);
+    return resource;
+  }
+  /** Amber code ends here */
   public static URL newURL(String scheme, String host, int port, String file) {
     URL url = recordFactory.newRecordInstance(URL.class);
     url.setScheme(scheme);

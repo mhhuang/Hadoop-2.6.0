@@ -59,17 +59,17 @@ public class Resources {
       return diff;
     }
 
-		/** Amber code starts here */
-		@Override
-		public void setAccs(int accs) {
+    /** Amber code starts here */
+    @Override
+    public void setAccs(int accs) {
       throw new RuntimeException("NONE cannot be modified!");
-		}
+    }
 
-		@Override
-		public int getAccs() {
-			return 0;
-		}
-		/** Amber code ends here */
+    @Override
+    public int getAccs() {
+      return 0;
+    }
+    /** Amber code ends here */
     
   };
   
@@ -104,17 +104,17 @@ public class Resources {
       return diff;
     }
     
-		/** Amber code starts here */
-		@Override
-		public void setAccs(int accs) {
+    /** Amber code starts here */
+    @Override
+    public void setAccs(int accs) {
       throw new RuntimeException("NONE cannot be modified!");
-		}
-    
-		@Override
-		public int getAccs() {
-			return 0;
-		}
-		/** Amber code ends here */
+    }
+      
+    @Override
+    public int getAccs() {
+      return 0;
+    }
+    /** Amber code ends here */
   };
 
   public static Resource createResource(int memory) {
@@ -122,10 +122,13 @@ public class Resources {
   }
 
   public static Resource createResource(int memory, int cores) {
-    Resource resource = Records.newRecord(Resource.class);
-    resource.setMemory(memory);
-    resource.setVirtualCores(cores);
-    return resource;
+    //Resource resource = Records.newRecord(Resource.class);
+    //resource.setMemory(memory);
+    //resource.setVirtualCores(cores);
+    //return resource;
+				/** Amber code starts here */
+    return createResource(memory, cores, 0);
+				/** Amber code ends here */
   }
 
 	/** Amber code starts here */
@@ -148,18 +151,18 @@ public class Resources {
 
   public static Resource clone(Resource res) {
     //return createResource(res.getMemory(), res.getVirtualCores());
-		/** Amber code starts here */
-    return createResource(res.getMemory(), res.getVirtualCores(), 
-				res.getAccs());
-		/** Amber code starts here */
+				/** Amber code starts here */
+				return createResource(res.getMemory(), res.getVirtualCores(), 
+								res.getAccs());
+				/** Amber code ends here */
   }
 
   public static Resource addTo(Resource lhs, Resource rhs) {
     lhs.setMemory(lhs.getMemory() + rhs.getMemory());
     lhs.setVirtualCores(lhs.getVirtualCores() + rhs.getVirtualCores());
-		/** Amber code starts here */
-    lhs.setAccs(lhs.getAccs() + rhs.getAccs());
-		/** Amber code starts here */
+				/** Amber code starts here */
+				lhs.setAccs(lhs.getAccs() + rhs.getAccs());
+				/** Amber code ends here */
     return lhs;
   }
 
@@ -170,9 +173,9 @@ public class Resources {
   public static Resource subtractFrom(Resource lhs, Resource rhs) {
     lhs.setMemory(lhs.getMemory() - rhs.getMemory());
     lhs.setVirtualCores(lhs.getVirtualCores() - rhs.getVirtualCores());
-		/** Amber code starts here */
-    lhs.setAccs(lhs.getAccs() - rhs.getAccs());
-		/** Amber code starts here */
+				/** Amber code starts here */
+				lhs.setAccs(lhs.getAccs() - rhs.getAccs());
+				/** Amber code ends here */
     return lhs;
   }
 
@@ -187,15 +190,28 @@ public class Resources {
   public static Resource multiplyTo(Resource lhs, double by) {
     lhs.setMemory((int)(lhs.getMemory() * by));
     lhs.setVirtualCores((int)(lhs.getVirtualCores() * by));
-		/** Amber code starts here */
+				/** Amber code starts here */
     lhs.setAccs((int)(lhs.getAccs() * by));
-		/** Amber code starts here */
+				/** Amber code ends here */
     return lhs;
   }
 
   public static Resource multiply(Resource lhs, double by) {
     return multiplyTo(clone(lhs), by);
   }
+  
+		/** Amber code starts here */
+		public static Resource multiplyToWOAccs(Resource lhs, double by) {
+				lhs.setMemory((int)(lhs.getMemory() * by));
+				lhs.setVirtualCores((int)(lhs.getVirtualCores() * by));
+				lhs.setAccs(lhs.getAccs());
+				return lhs;
+		}
+
+		public static Resource multiplyWOAccs(Resource lhs, double by) {
+				return multiplyToWOAccs(clone(lhs), by);
+		}
+		/** Amber code ends here */
   
   public static Resource multiplyAndNormalizeUp(
       ResourceCalculator calculator,Resource lhs, double by, Resource factor) {
@@ -204,7 +220,10 @@ public class Resources {
   
   public static Resource multiplyAndNormalizeDown(
       ResourceCalculator calculator,Resource lhs, double by, Resource factor) {
-    return calculator.multiplyAndNormalizeDown(lhs, by, factor);
+    //return calculator.multiplyAndNormalizeDown(lhs, by, factor);
+    /** Amber code starts here */
+    return calculator.multiplyAndNormalizeDownWOAccs(lhs, by, factor);
+    /** Amber code ends here */
   }
   
   public static Resource multiplyAndRoundDown(Resource lhs, double by) {
@@ -246,17 +265,28 @@ public class Resources {
     return resourceCalculator.divide(clusterResource, lhs, rhs);
   }
   
-	/** Amber code starts here */
-  public static float rsrvDivide(
+		/** Amber code starts here */
+  // get min of mem divide and acc divide
+  public static float rsrvDivideMin(
       ResourceCalculator resourceCalculator,
       Resource clusterResource, Resource lhs, Resource rhs) {
     float memDivide = resourceCalculator.divide(clusterResource, lhs, rhs);
-		return Math.min(memDivide, 
-				rhs.getAccs() == 0 ? memDivide :
-				lhs.getAccs() / rhs.getAccs());
+				return Math.min(memDivide, 
+								rhs.getAccs() == 0 ? memDivide :
+								(float)lhs.getAccs() / (float)rhs.getAccs());
   }
+
+  // get max of mem divide and acc divide
+  public static float rsrvDivideMax(
+      ResourceCalculator resourceCalculator,
+      Resource clusterResource, Resource lhs, Resource rhs) {
+    float memDivide = resourceCalculator.divide(clusterResource, lhs, rhs);
+				return Math.max(memDivide, 
+								rhs.getAccs() == 0 ? memDivide :
+								(float)lhs.getAccs() / (float)rhs.getAccs());
+  }
+		/** Amber code ends here */
   
-	/** Amber code ends here */
   public static Resource divideAndCeil(
       ResourceCalculator resourceCalculator, Resource lhs, int rhs) {
     return resourceCalculator.divideAndCeil(lhs, rhs);

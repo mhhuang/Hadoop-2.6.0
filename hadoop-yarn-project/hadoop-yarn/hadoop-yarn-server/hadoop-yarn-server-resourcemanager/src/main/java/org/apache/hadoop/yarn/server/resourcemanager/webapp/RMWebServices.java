@@ -1163,9 +1163,20 @@ public class RMWebServices {
       String msg = "Requested more memory than configured max";
       throw new BadRequestException(msg);
     }
+    /** Amber */
+    if (newApp.getResource().getAccs() > rm.getConfig().getInt(
+      YarnConfiguration.RM_SCHEDULER_MAXIMUM_ALLOCATION_ACCS,
+      YarnConfiguration.DEFAULT_RM_SCHEDULER_MAXIMUM_ALLOCATION_ACCS)) {
+      String msg = "Requested more accs than configured max";
+      throw new BadRequestException(msg);
+    }
     Resource r =
         Resource.newInstance(newApp.getResource().getMemory(), newApp
-          .getResource().getvCores());
+          .getResource().getvCores(), newApp.getResource().getAccs());
+    
+    //Resource r =
+    //    Resource.newInstance(newApp.getResource().getMemory(), newApp
+    //      .getResource().getvCores());
     return r;
   }
 

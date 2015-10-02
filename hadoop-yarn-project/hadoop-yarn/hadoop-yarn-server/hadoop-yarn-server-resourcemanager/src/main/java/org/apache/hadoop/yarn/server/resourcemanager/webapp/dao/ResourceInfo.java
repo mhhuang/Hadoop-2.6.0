@@ -29,6 +29,8 @@ import org.apache.hadoop.yarn.api.records.Resource;
 public class ResourceInfo {
   int memory;
   int vCores;
+  /** Amber */
+  int accs;
   
   public ResourceInfo() {
   }
@@ -36,6 +38,8 @@ public class ResourceInfo {
   public ResourceInfo(Resource res) {
     memory = res.getMemory();
     vCores = res.getVirtualCores();
+    /** Amber */
+    accs = res.getAccs();
   }
 
   public int getMemory() {
@@ -45,10 +49,22 @@ public class ResourceInfo {
   public int getvCores() {
     return vCores;
   }
+
+  /** Amber code starts here */
+  public int getAccs() {
+    return accs;
+  }
+
+  public void setAccs(int accs) {
+    this.accs = accs;
+  }
+  /** Amber code ends here */
   
   @Override
   public String toString() {
-    return "<memory:" + memory + ", vCores:" + vCores + ">";
+  /** Amber */
+    return "<memory:" + memory + ", vCores:" + vCores + ", accs: " + accs + ">";
+  //  return "<memory:" + memory + ", vCores:" + vCores + ">";
   }
 
   public void setMemory(int memory) {

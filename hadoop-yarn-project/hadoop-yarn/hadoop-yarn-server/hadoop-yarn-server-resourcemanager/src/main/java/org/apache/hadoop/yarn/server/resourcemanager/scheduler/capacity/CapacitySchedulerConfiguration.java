@@ -587,7 +587,12 @@ public class CapacitySchedulerConfiguration extends Configuration {
     int maximumCores = getInt(
         YarnConfiguration.RM_SCHEDULER_MAXIMUM_ALLOCATION_VCORES,
         YarnConfiguration.DEFAULT_RM_SCHEDULER_MAXIMUM_ALLOCATION_VCORES);
-    return Resources.createResource(maximumMemory, maximumCores);
+    //return Resources.createResource(maximumMemory, maximumCores);
+    /** Amber */
+    int maximumAccs = getInt(
+        YarnConfiguration.RM_SCHEDULER_MAXIMUM_ALLOCATION_ACCS,
+        YarnConfiguration.DEFAULT_RM_SCHEDULER_MAXIMUM_ALLOCATION_ACCS);
+    return Resources.createResource(maximumMemory, maximumCores, maximumAccs);
   }
 
   public boolean getEnableUserMetrics() {

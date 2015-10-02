@@ -81,6 +81,11 @@ public abstract class ResourceCalculator {
   public abstract Resource multiplyAndNormalizeDown(
       Resource r, double by, Resource stepFactor);
   
+  /** Amber code starts here */
+  public abstract Resource multiplyAndNormalizeDownWOAccs(
+      Resource r, double by, Resource stepFactor);
+  /** Amber code ends here */
+
   /**
    * Normalize resource <code>r</code> given the base 
    * <code>minimumResource</code> and verify against max allowed

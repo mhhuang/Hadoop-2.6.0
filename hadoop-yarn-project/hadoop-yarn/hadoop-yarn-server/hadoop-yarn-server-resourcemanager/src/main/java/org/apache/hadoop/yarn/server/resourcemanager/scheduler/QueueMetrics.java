@@ -74,6 +74,12 @@ public class QueueMetrics implements MetricsSource {
   @Metric("# of reserved containers") MutableGaugeInt reservedContainers;
   @Metric("# of active users") MutableGaugeInt activeUsers;
   @Metric("# of active applications") MutableGaugeInt activeApplications;
+  /** Amber */
+  @Metric("Allocated accelerators") MutableGaugeInt allocatedAccs;
+  @Metric("Reserved accelerators") MutableGaugeInt reservedAccs;
+  @Metric("Available accelerators") MutableGaugeInt availableAccs;
+  @Metric("Pending accelerator allocation") MutableGaugeInt pendingAccs;
+
   private final MutableGaugeInt[] runningTime;
   private TimeBucketMetrics<ApplicationId> runBuckets;
 
@@ -319,6 +325,8 @@ public class QueueMetrics implements MetricsSource {
   public void setAvailableResourcesToQueue(Resource limit) {
     availableMB.set(limit.getMemory());
     availableVCores.set(limit.getVirtualCores());
+    /** Amber */
+    availableAccs.set(limit.getAccs());
   }
 
   /**
@@ -356,6 +364,8 @@ public class QueueMetrics implements MetricsSource {
     pendingContainers.incr(containers);
     pendingMB.incr(res.getMemory() * containers);
     pendingVCores.incr(res.getVirtualCores() * containers);
+    /** Amber */
+    pendingAccs.incr(res.getAccs() * containers);
   }
 
   public void decrPendingResources(String user, int containers, Resource res) {
@@ -373,6 +383,8 @@ public class QueueMetrics implements MetricsSource {
     pendingContainers.decr(containers);
     pendingMB.decr(res.getMemory() * containers);
     pendingVCores.decr(res.getVirtualCores() * containers);
+    /** Amber */
+    pendingAccs.decr(res.getAccs() * containers);
   }
 
   public void allocateResources(String user, int containers, Resource res,
@@ -381,6 +393,8 @@ public class QueueMetrics implements MetricsSource {
     aggregateContainersAllocated.incr(containers);
     allocatedMB.incr(res.getMemory() * containers);
     allocatedVCores.incr(res.getVirtualCores() * containers);
+    /** Amber */
+    allocatedAccs.incr(res.getAccs() * containers);
     if (decrPending) {
       _decrPendingResources(containers, res);
     }
@@ -398,6 +412,8 @@ public class QueueMetrics implements MetricsSource {
     aggregateContainersReleased.incr(containers);
     allocatedMB.decr(res.getMemory() * containers);
     allocatedVCores.decr(res.getVirtualCores() * containers);
+    /** Amber */
+    allocatedAccs.decr(res.getAccs() * containers);
     QueueMetrics userMetrics = getUserMetrics(user);
     if (userMetrics != null) {
       userMetrics.releaseResources(user, containers, res);
@@ -488,8 +504,28 @@ public class QueueMetrics implements MetricsSource {
   }
   
   public Resource getAllocatedResources() {
-    return BuilderUtils.newResource(allocatedMB.value(), allocatedVCores.value());
+//    return BuilderUtils.newResource(allocatedMB.value(), allocatedVCores.value());
+/** Amber */
+    return BuilderUtils.newResource(allocatedMB.value(), allocatedVCores.value(),
+        allocatedAccs.value());
   }
+/** Amber code starts here */
+  public int getAllocatedAccs() {
+    return allocatedAccs.value();
+  }
+
+  public int getAvailableAccs() {
+    return availableAccs.value();
+  }  
+
+  public int getReservedAccs() {
+    return reservedAccs.value();
+  }
+
+  public int getPendingAccs() {
+    return pendingAccs.value();
+  }
+/** Amber code starts here */
 
   public int getAllocatedMB() {
     return allocatedMB.value();

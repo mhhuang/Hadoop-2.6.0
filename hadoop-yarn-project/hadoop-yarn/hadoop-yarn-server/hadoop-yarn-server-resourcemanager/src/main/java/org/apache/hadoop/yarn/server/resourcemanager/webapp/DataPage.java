@@ -48,6 +48,8 @@ public class DataPage extends TextView {
 
   final String TYPE_MEMORY = "Memory";
   final String TYPE_CPU= "CPU";
+  /** Amber */
+  final String TYPE_ACC = "ACC";
 
   @Inject
   DataPage(ViewContext ctx, String contentType, ResourceManager rm, CapacitySchedulerConfiguration csConf) {
@@ -74,6 +76,10 @@ public class DataPage extends TextView {
     }
     if (type.equals(TYPE_CPU)) {
       return resource.getVirtualCores();
+    }
+    /** Amber */
+    if (type.equals(TYPE_ACC)) {
+      return resource.getAccs();
     }
     return 0;
   }
@@ -130,11 +136,16 @@ public class DataPage extends TextView {
     } else if (resource.equals(TYPE_CPU)) {
       maxResource =
           qm.getAvailableVirtualCores() + qm.getAllocatedVirtualCores();
+    } else if (resource.equals(TYPE_ACC)) {
+      maxResource =
+          qm.getAvailableAccs() + qm.getAllocatedAccs();
     }
 
     JSONArray resources = new JSONArray();
     resources.put(TYPE_MEMORY);
     resources.put(TYPE_CPU);
+    /** Amber */
+    resources.put(TYPE_ACC);
 
     JSONObject json = new JSONObject();
     JSONObject config = new JSONObject();

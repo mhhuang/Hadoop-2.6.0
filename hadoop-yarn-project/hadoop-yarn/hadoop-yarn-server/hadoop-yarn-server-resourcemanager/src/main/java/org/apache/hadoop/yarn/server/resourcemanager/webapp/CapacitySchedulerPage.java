@@ -86,6 +86,17 @@ class CapacitySchedulerPage extends RmView {
           .append(StringUtils.format("%.2f", numerator.getvCores() * 100.0 /
           denominator.getvCores()) + "%</span>)");
       }
+      /** Amber code starts here */
+      percentString.append(", Accs: ");
+      if (numerator != null) {
+        percentString.append(numerator.getAccs());
+      }
+      if (denominator.getAccs() != 0) {
+        percentString.append(" (<span title='of used resources in this queue'>")
+          .append(StringUtils.format("%.2f", numerator.getAccs() * 100.0 /
+          denominator.getAccs()) + "%</span>)");
+      }
+      /** Amber code ends here */
       return percentString.toString();
     }
 

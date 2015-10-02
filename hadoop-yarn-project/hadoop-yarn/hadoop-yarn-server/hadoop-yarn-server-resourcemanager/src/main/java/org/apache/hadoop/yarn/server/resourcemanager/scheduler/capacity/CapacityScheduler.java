@@ -34,6 +34,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.HashSet;
 import java.util.Set;
+/* Amber import starts */
+import java.util.HashSet;
+/* Amber import ends */
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -117,6 +120,31 @@ import org.apache.hadoop.yarn.server.resourcemanager.scheduler.Queue;
 public class CapacityScheduler extends
     AbstractYarnScheduler<FiCaSchedulerApp, FiCaSchedulerNode> implements
     PreemptableResourceScheduler, CapacitySchedulerContext, Configurable {
+
+		/** Amber code starts here */
+	 private static List<ContainerId> justFinishedAccContainers =
+			 new ArrayList<ContainerId>();
+
+ 	@Override
+ 			@Lock(CapacityScheduler.class)
+ 			public List<ContainerId> pullJustFinishedAccContainers() {
+ 					List<ContainerId> returnList = new ArrayList<ContainerId>(
+ 									this.justFinishedAccContainers.size());
+ 					returnList.addAll(this.justFinishedAccContainers);
+ 					this.justFinishedAccContainers.clear();
+ 					return returnList;
+ 			}
+
+		private static Collection<String> nodeIps = new HashSet<String>();
+
+		@Override
+				@Lock(CapacityScheduler.class)
+				public List<String> getSlaveIps() {
+						List<String> nodeIpStrings = new ArrayList<String>();
+						nodeIpStrings.addAll(nodeIps);
+						return nodeIpStrings;
+				}
+	/** Amber code ends here */
 
   private static final Log LOG = LogFactory.getLog(CapacityScheduler.class);
 
@@ -1133,6 +1161,11 @@ public class CapacityScheduler extends
     LOG.info("Added node " + nodeManager.getNodeAddress() + 
         " clusterResource: " + clusterResource);
 
+				/** Amber code starts here */
+				if (nodeManager.getTotalCapability().getAccs() > 0)
+						nodeIps.add(nodeManager.getHostName());
+				/** Amber code ends here */
+
     if (scheduleAsynchronously && numNodes == 1) {
       asyncSchedulerThread.beginSchedule();
     }
@@ -1180,6 +1213,12 @@ public class CapacityScheduler extends
 
     LOG.info("Removed node " + nodeInfo.getNodeAddress() + 
         " clusterResource: " + clusterResource);
+
+				/** Amber code starts here */
+    if(node.getRMNode().getTotalCapability().getAccs() > 0)
+						nodeIps.remove(nodeInfo.getHostName());
+				/** Amber code ends here */
+
   }
   
   @Lock(CapacityScheduler.class)
@@ -1190,6 +1229,10 @@ public class CapacityScheduler extends
       LOG.info("Null container completed...");
       return;
     }
+				/** Amber code starts here */
+				if (rmContainer.getContainer().getResource().getAccs() > 0)
+						justFinishedAccContainers.add(rmContainer.getContainer().getId());
+		  /** Amber code ends here */
     
     Container container = rmContainer.getContainer();
     

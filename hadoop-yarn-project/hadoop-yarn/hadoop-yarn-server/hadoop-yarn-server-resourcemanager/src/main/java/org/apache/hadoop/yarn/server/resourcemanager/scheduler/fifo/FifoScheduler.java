@@ -103,6 +103,16 @@ import com.google.common.annotations.VisibleForTesting;
 public class FifoScheduler extends
     AbstractYarnScheduler<FiCaSchedulerApp, FiCaSchedulerNode> implements
     Configurable {
+  /** Amber code starts here */
+  @Override
+  public List<ContainerId> pullJustFinishedAccContainers() {
+    return new ArrayList<ContainerId>();
+  }
+  @Override
+  public List<String> getSlaveIps() {
+    return new ArrayList<String>();
+  }
+  /** Amber code ends here */
 
   private static final Log LOG = LogFactory.getLog(FifoScheduler.class);
 
